@@ -4,7 +4,7 @@ Webiworm is a Node.js app designed to connect to a variety of binary seismic tra
 
 
 #Data Types
-#curently only the Earthworm Tracebuf2 is supported
+curently only the Earthworm Tracebuf2 is supported
 
 ##TRACEBUF2
 
@@ -29,11 +29,11 @@ bytes to follow = number of byest of data to follow for a given request Intel = 
 
 For request:
 
-GETSCNLRAW: getRaw RCM EHZ UW -- 1404165651 1404165655 
+<code> GETSCNLRAW: getRaw RCM EHZ UW -- 1404165651 1404165655 </code>
 
 Header response:
 
-getRaw 362 RCM EHZ UW -- F i2 1.4041656508200073E9 1.4041656558200073E9 1320
+<code> getRaw 362 RCM EHZ UW -- F i2 1.4041656508200073E9 1.4041656558200073E9 1320 </code>
 
 ##MiniSeed
 
