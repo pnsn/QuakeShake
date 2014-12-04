@@ -1,7 +1,7 @@
 //Connect to Earthworm waveserver to retrieve traceBuf2 packages for a given SCNL and time window 
 //use redis sub/pub design to broadcast to listening node app(s)
 //call with following format 
-//node webiwormPub.js server=128.95.16.15 port=16017 sta=RCM chan=EHZ net=UW
+//node webiwormPub.js server=host port=port sta=RCM chan=EHZ net=UW
 var net = require('net');
 var Waveserver = require(__dirname + '/lib/waveserver');
 var redis = require('redis');
@@ -17,9 +17,6 @@ process.argv.forEach(function(val, index, array) {
   }
 });
 
-//wave server
-// var HOST = '128.95.16.15';
-// var PORT = 16017; 
 
 var HOST = ARGS['server'];
 var PORT = ARGS['port'];
