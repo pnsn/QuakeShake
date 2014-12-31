@@ -9,9 +9,9 @@ var redis = require("redis"),
 });
 
 client1.on("message", function (channel, message) {
-   console.log("client1 channel " + channel + ": " + message);
+   console.log("client1eee channel " + channel + ": " + message);
    msg_count += 1;
-   if (msg_count === 6) {
+   if (msg_count < 4) {
        client1.unsubscribe();
        client1.end();
        client2.end();

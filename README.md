@@ -1,6 +1,6 @@
-#Webiworm
+quakeShake#quakeShake
 
-Webiworm is a Node.js app designed to connect to a variety of binary seismic trace data, convert it to JSON and use Redis pub-sub to broadcast. Note at this time it is an unfinished project. 
+quakeShake is a Node.js app designed to connect to a variety of binary seismic trace data, convert it to JSON and use Redis pub-sub to broadcast. Note at this time it is an unfinished project. 
 
 
 #Data Types
@@ -39,6 +39,12 @@ Header response:
 
 Coming soon
 
+
+##Publish
+The quakeShakePub server connects to waveserver, converts the binary packets into json packets, the publishes them using the redis pub/sub model. This will allow the app to be scaled and load balanced very easily with only one connection to the waveserver.
+quakeShakePub uses GETSNCLRAW to connect to the waveserver and is envoked with:
+<code>node server/quakeShakePub.js server=someserver  port=portNum sta=STA chan=CHN net=NET</code>
+##Subscribe
 
 ##Client
 The client is currently under development

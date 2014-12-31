@@ -1,0 +1,35 @@
+#page{
+  margin:20px;
+}
+
+#status{
+  height:20px;
+/*  width:80px;*/
+  margin-bottom: 50px;
+  color:red;
+}
+
+
+#zoom-slider{
+  margin-top:25px;
+  width:300px;
+}
+
+#playback-slider{
+  clear:both;
+  margin-top: 20px;
+  width:300px;
+}
+
+.slidertime{
+  margin-top:5px;
+  float:left;
+}
+
+#sliderRight{
+  margin-left:100px;
+}
+
+#sliderMid{
+  margin-left:100px;
+}

@@ -1,22 +1,36 @@
 <html>
   <head>
  
-    <title>pub sub test</title>
+    <title>quakeShake test</title>
    
     <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
  
-    <!--Load the AJAX API-->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css" />
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
   <script src="https://cdn.socket.io/socket.io-1.0.0.js"></script>
-  <script src="./js/webiwormClient.js"></script>
-  <script src="./js/d3/d3.min.js"></script>
-  <script src="./js/epoch.min.js"></script>
+  <script src="./js/quakeShakeClient.js"></script>
   
-  <link rel="stylesheet" type="text/css" href="./css/epoch.min.css">
+  <link rel="stylesheet" type="text/css" href="./css/quakeShake.css">
   
   </head>
  
   <body>
       <div id='status'></div>
+      <div id ="page">
+        <canvas id="quakeShake"> </canvas>
+        <div id="playback-slider"></div>
+      
+        <div id ="sliderVal"></div>
+        <div class ="slidertime" id="sliderLeft"></div>
+        <div class ="slidertime" id="sliderMid"></div>
+        <div class ="slidertime" id="sliderRight"></div>
+        <div id = "zoom-slider"></div>
+        <p><a id="button-play" href="#"> Play </a></p>
+        <p><a id="button-stop" href="#"> Stop </a></p>
+      </div>
   </body>
 </html>
+
+
+  
