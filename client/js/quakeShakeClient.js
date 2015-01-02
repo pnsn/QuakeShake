@@ -62,7 +62,7 @@ $("#button-realtime").click(function(){
   
 //websocket stuff
 
-  var socket = io.connect('http://localhost:3300');
+  var socket = io('http://realtime.pnsn.org/');
   
   socket.on('connect', function(data){
     // setStatus('connected');
@@ -113,7 +113,7 @@ $("#button-realtime").click(function(){
     this.pixPerSec         = 10;  //10 pix/sec = samples second i.e. the highest resolution we can display
     this.timeWindowSec  = 90;
     this.timeStep = 1000/this.pixPerSec;
-    this.channelHeight  = 250; //how many pix for each signal
+    this.channelHeight  = 200; //how many pix for each signal
     this.height         = null;
     this.width          = this.timeWindowSec*this.pixPerSec;
     this.buffer         = null;
@@ -449,20 +449,15 @@ $("#button-realtime").click(function(){
   
   
   Canvas.prototype.selectPlayback=function(e,ui){
-    console.log(this.startPixOffset);
     if(this.startPixOffset == 0){
-      console.log("whar");
       if(this.scroll){
-        console.log("shouldn't be hear");
         this.pauseScroll();
       }
       var val = ui.value;
       if(val > this.endtime){
-        console.log("am i heres??");
         $("#playback-slider").slider( "option", "value", this.lastTimeFrame);
       
       }else{
-        console.log("I really want to be here you know");
         this.lastTimeFrame= this.makeTimeKey(val);
         this.drawSignal();
       }

@@ -1,6 +1,7 @@
 //Subscription side of redis pub/sub
 //To start get channel name for output of quakeShakePub
-// node server/quakeShakeSub --channel=someChannelName
+// node server/quakeShakeSub --channel=someChannelName, --redisHost=someRedisHost, --redisPort=redisport
+
 var http = require('http');
 // var sockjs = require('sockjs');
 var redis = require('redis');
@@ -18,9 +19,9 @@ process.argv.forEach(function(val, index, array) {
 });
 console.log(ARGS);
 
-if(ARGS['channel']==null || ARGS['port'] == null){
+if(ARGS['channel']==null || ARGS['port'] == null || ARGS['redisHost']==null || ARGS['redisPort'] == null ){
   console.log("channel and port arguement not found. Usage:");
-  console.log("node server/quakeShakeSub port=[port] channel=[chan]");
+  console.log("node server/quakeShakeSub port=[port] channel=[chan] redisHost=[redis pub host] redisPort=[port]");
   process.exit(1);
   
 }else{
@@ -30,7 +31,7 @@ if(ARGS['channel']==null || ARGS['port'] == null){
 
 var io = require('socket.io')(ARGS['port']); //port connection for client
 //server node (subscriber)
-var sub = redis.createClient();
+var sub = redis.createClient(ARGS['redisPort'], ARGS['redisHost']);
 sub.subscribe(ARGS['channel']);//subscribe to Pub channel
 io.on('connection', function(client){ 
   sub.on('message', function(channel, msg) {
