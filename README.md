@@ -1,4 +1,4 @@
-quakeShake#quakeShake
+#quakeShake
 
 quakeShake is a Node.js app designed to connect to a variety of binary seismic trace data, convert it to JSON and use Redis pub-sub to broadcast. Note at this time it is an unfinished project. 
 

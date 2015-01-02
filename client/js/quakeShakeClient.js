@@ -1,46 +1,64 @@
 //client side of quakeShake 
 $(function(){  
   var canvas = new Canvas();
-  
-  var chan1 = new Scnl({
-    sta: "HWK1", 
+var channels = [
+    new Scnl({
+    sta: "HWK1",  
     chan: "HNZ", 
     net: "UW", 
     loc: "--", 
+    max: null,
     position: 0, //from top 0 is highest
     lineColor: canvas.colors.shBlue
-  });
+  }),
+      new Scnl({
+      sta: "HWK2",  
+      chan: "HNZ", 
+      net: "UW", 
+      loc: "--", 
+      max: null,
+      position: 1, //from top 0 is highest
+      lineColor: canvas.colors.shGreen
+    }),
+      new Scnl({
+      sta: "HWK3",  
+      chan: "HNZ", 
+      net: "UW", 
+      loc: "--", 
+      max: null,
+      position: 2, //from top 0 is highest
+      lineColor: canvas.colors.shDarkBlue
+    })
+];
    $("#playback-slider").slider({
      slide: function(e, ui){canvas.selectPlayback(e, ui);}
    });
   
    $("#zoom-slider").slider({
-     min: 1,
-     max: 1000,
+     min: -1, //logs
+     max: 3,
+     step: .05,
      slide: function(e, ui){canvas.selectScale(e, ui);}
    });
-  var channels = [chan1];
 
-var scroll;
+
   
   //every sample rate(pixel) redraw
-function startScroll(){
-  canvas.canvasScroll = true;
-  scroll = setInterval(function(){
-    if(canvas.buffer != null)
-      canvas.drawSignal();
-  }, 1000/canvas.pixPerSec);
-}
-startScroll();
 
 $("#button-play").click(function(){
-  startScroll();
+  canvas.playScroll();
+  return false;
 });
 
 $("#button-stop").click(function(){
-  clearInterval(scroll);
+  canvas.pauseScroll();
+  return false;
 });
 
+$("#button-realtime").click(function(){
+  canvas.realtime=true;
+  return false;
+});
   
 //websocket stuff
 
@@ -95,7 +113,7 @@ $("#button-stop").click(function(){
     this.pixPerSec         = 10;  //10 pix/sec = samples second i.e. the highest resolution we can display
     this.timeWindowSec  = 90;
     this.timeStep = 1000/this.pixPerSec;
-    this.channelHeight  = 400; //how many pix for each signal
+    this.channelHeight  = 250; //how many pix for each signal
     this.height         = null;
     this.width          = this.timeWindowSec*this.pixPerSec;
     this.buffer         = null;
@@ -112,29 +130,31 @@ $("#button-stop").click(function(){
     this.startPixOffset = this.width; //starttime pixelOffset
     this.lastTimeFrame= null; // track the time of the last time frame(left side of canvas this will be incremented each interval)
     this.canvasElement = document.getElementById("quakeShake");
-    this.canvasScroll = true;
     this.localTime = true;
-    this.max = null;
-    this.autoScale= true;
-  
+    this.scale = 1; 
+    this.realtime = true; //realtime will fast forward if tail of buffer gets too long.
+    this.scroll = null; //sets scrolling
   };
   
   
   //called when new data arrive. Funciton independently from 
   // drawSignal method which is called on a sampRate interval
   Canvas.prototype.updateBuffer = function(packet){
-     //set initial incoming data to be within 5px of left side
-     //ie we want to be writting new data just inside of canvas left
-     //also set height and width here based on number of channels
+     //we want to be writting new data just inside of canvas left
     if(this.lastTimeFrame == null){
       this.lastTimeFrame = this.makeTimeKey(packet.starttime);
+    
       this.startPixOffset -=(this.pixPerSec*4);
+    
       //400 for each channel + 20 pix for top and bottom time line plus 2px margin
       this.height = channels.length*this.channelHeight + 44; 
       this.canvasElement.height = this.height;
       this.canvasElement.width = this.width;
       
     }
+    
+    
+    
     if(this.buffer == null)
       this.buffer = {};
     //update times to track oldest and youngest data points
@@ -147,23 +167,24 @@ $("#button-stop").click(function(){
     var _decimate = packet.samprate/this.pixPerSec;
     var _i = 0;
     var _t = packet.starttime;
-    
-    this.buffer[this.makeTimeKey(_t)] ={};
-    this.buffer[this.makeTimeKey(_t)][this.makeChanKey(packet)] = packet.data[_i];
+    // this.buffer[this.makeTimeKey(_t)][this.makeChanKey(packet)] = packet.data[_i];
     while(_i < packet.data.length){
       var _index = Math.round(_i+= _decimate);
       if(_index < packet.data.length){
-        _t+=this.timeStep; 
-        this.buffer[this.makeTimeKey(_t)] ={};
+        if(!this.buffer[this.makeTimeKey(_t)]){
+          this.buffer[this.makeTimeKey(_t)] ={};
+        }
         this.buffer[this.makeTimeKey(_t)][this.makeChanKey(packet)] = packet.data[_index];
+        _t+=this.timeStep; 
+        
       }
-    }    
+    } 
   };
   
 
   
   Canvas.prototype.drawSignal = function(){
-    if(this.canvasScroll){
+    if(this.scroll){
       //OFFSET at start
       if(this.startPixOffset >  0){
         this.startPixOffset--;
@@ -173,21 +194,23 @@ $("#button-stop").click(function(){
       
       //ADJUST PLAYwe need to adjust play if data on end of buffer tails off canvas
       //ideally we want new data written on canvas at about 10 seconds in 
-      var tail = parseInt(((this.endtime - this.lastTimeFrame)/1000 * this.pixPerSec) - this.width + this.startPixOffset, 0);
-      var pad = 0;
-      if(tail > -50 && tail < 20)
-        pad =2;
-      if(tail > 20)
-        pad = 4;
-      if(tail > 100)
-        pad =9;
-      if(tail > 1000)
-        pad=99;
-      if(tail > 10000)
-        pad=9999;
-        //need to adjust these two values if we added padding
-      this.lastTimeFrame += pad*this.timeStep;
-      this.startPixOffset = Math.max(0,   this.startPixOffset -pad);
+      if(this.realtime){
+        var tail = parseInt(((this.endtime - this.lastTimeFrame)/1000 * this.pixPerSec) - this.width + this.startPixOffset, 0);
+        var pad = 0;
+        if(tail > -50 && tail < 20)
+          pad =2;
+        if(tail > 20)
+          pad = 4;
+        if(tail > 100)
+          pad =9;
+        if(tail > 1000)
+          pad=99;
+        if(tail > 10000)
+          pad=9999;
+          //need to adjust these two values if we added padding
+        this.lastTimeFrame += pad*this.timeStep;
+        this.startPixOffset = Math.max(0,   this.startPixOffset -pad);
+      }
     
       //PRUNE the buffer at 6 canvas widths by three canvas widths
       if(((this.endtime - this.starttime)/1000)*this.pixPerSec > 6*this.width){
@@ -205,8 +228,16 @@ $("#button-stop").click(function(){
     var start = this.lastTimeFrame;
 	  var stop = this.lastTimeFrame + this.timeWindowSec*1000;
 	  if(start < stop){
+	    var ctx = this.canvasElement.getContext("2d");
+      ctx.clearRect( 0, 0, this.width, this.height );
+  		ctx.lineWidth = this.lineWidth;
+      this.drawAxes(ctx);
+  		ctx.beginPath();
+      
       //iterate through all channels and draw
       for(var i=0; i< channels.length; i++){
+        var channel = channels[i];
+        start = this.lastTimeFrame;
       
         //find mean and max
         var sum=0;
@@ -215,16 +246,16 @@ $("#button-stop").click(function(){
         //use full array for ave an max
         var starttime = this.starttime;
         var count =0;
-        var channel = channels[i];
         while(starttime <= this.endtime){
           if(this.buffer[starttime] && this.buffer[starttime][channel.key]){
             var val = this.buffer[starttime][channel.key];
             sum+=val;
             max = val > max ? val : max;
             min = val < min ? val :min;
+            count++;
+            
           }
           starttime+=this.timeStep;
-          count++;
         }
         var mean = parseInt(sum/count,0);
         
@@ -232,34 +263,17 @@ $("#button-stop").click(function(){
         if(Math.abs(max - mean) < Math.abs(min - mean)){
           max = min; 
         }
-        
-        
-        // //how should we scale?
-        // //this.max set by zoom slider
-        
-        if(this.autoScale  || !this.max){
-          max = parseInt(Math.abs(max -mean),0);
-        }else{
-          console.log("autoscale");
-          max = this.max;          
-        }
-        
-        $("#zoom-slider").slider( "option", "value", max);
-        
+        // //this.scale is default 1 and adjusted by zoom slider
+          max = parseInt(Math.abs(max -mean)*this.scale,0);
+        ///FIXME
+        // max = 1;
         
         //FIXME Debugging
-        $("#status").text("Pad by " + pad + ", tail:" + tail + ", bufferLength: " + count + 
-          ", mean: " + mean + ", max: " + max + ", sum: " + sum + ", zoom:" + 
-          $("#zoom-slider").slider( "option", "value")) ;
-        
+        $("#status").text("Pad by " + pad + ", tail:" + tail + ", bufferLength: " + count );
+        var s = channel.sta.toLowerCase();
+        $("#status-" + s).text(s+ ":" +  " mean: " + mean + ", max: " + max + ", min:" + min + ", sum: " + sum  );        
       
         
-        var ctx = this.canvasElement.getContext("2d");
-        ctx.clearRect( 0, 0, this.width, this.height );
-    		ctx.lineWidth = this.lineWidth;
-        this.drawAxes(ctx, channel);
-    		ctx.beginPath();
-    		ctx.font = "12px Helvetica, Arial, sans-serif";
     		ctx.strokeStyle = channel.lineColor;
     
     
@@ -272,11 +286,11 @@ $("#button-stop").click(function(){
     	  var gap = true;
     	  // draw Always start from lastTimeFrame and go one canvas width
     	  count = 0;
+        
         while(start <= stop){
           if(this.buffer[start] && this.buffer[start][channel.key]){
             var val = this.buffer[start][channel.key];
             var norm = ((val - mean) / max ); 
-            // console.log(norm);
             if(norm < -1)
               norm = -1;
             if(norm > 1)
@@ -315,7 +329,7 @@ $("#button-stop").click(function(){
   };
   
   
-  Canvas.prototype.drawAxes = function(ctx, channel){
+  Canvas.prototype.drawAxes = function(ctx){
     //some axis lines
     ctx.beginPath();
     //x-axes
@@ -333,8 +347,21 @@ $("#button-stop").click(function(){
     
     //scnl label
     ctx.font = "15px Helvetica, Arial, sans-serif";
-    ctx.fillText(channel.sta + ":" + channel.chan + ":" + channel.net + ":" + channel.loc , 10, 40);
-    ctx.strokeStyle = this.axisColor;  
+    ctx.strokeStyle = this.axisColor;      
+    ctx.stroke();
+    
+    
+    ctx.beginPath();
+    //channel center lines and labels:
+    for(var i=0; i< channels.length; i++){
+      var channel = channels[i];
+      var yOffset= channel.position*this.channelHeight; 
+      ctx.fillText(channel.sta, 10, 40+ yOffset);
+      var chanCenter = 22 + this.channelHeight/2 +yOffset;      
+      ctx.moveTo(0,  chanCenter);
+      ctx.lineTo(this.width, chanCenter);
+    }
+    ctx.strokeStyle = "#CCCCCC";
     ctx.stroke();
     //end axis
     
@@ -344,8 +371,6 @@ $("#button-stop").click(function(){
     ctx.font = "12px Helvetica, Arial, sans-serif";
     
     //centerline
-    ctx.moveTo(0, this.height/2 );
-    ctx.lineTo(this.width, this.height/2);
     
     var offset = this.lastTimeFrame%this.tickInterval;  //should be number between 0 & 9999 for 10 second ticks
     //what is time of first tick to left  of startPixOffset
@@ -395,36 +420,67 @@ $("#button-stop").click(function(){
   Canvas.prototype.updatePlaybackSlider=function(){
     $("#playback-slider" ).slider( "option", "max", this.endtime);
     $("#playback-slider").slider( "option", "min", this.starttime);
-    if(this.canvasScroll){
+    if(this.scroll){
       $("#playback-slider").slider( "option", "value", this.lastTimeFrame);
     }
-    $("#sliderLeft").text(this.dateFormat(this.starttime));
-    $("#sliderRight").text(this.dateFormat(this.lastTimeFrame));
-    $("#sliderMid").text(this.dateFormat($("#playback-slider").slider( "option", "value")));
+    // $("#sliderLeft").text(this.dateFormat(this.starttime));
+    // $("#sliderRight").text(this.dateFormat(this.lastTimeFrame));
+    // $("#sliderMid").text(this.dateFormat($("#playback-slider").slider( "option", "value")));
     
   
    };
- 
+  
+  Canvas.prototype.pauseScroll = function(){
+    clearInterval(this.scroll);
+    this.scroll = null;
+    //take things out of realtime mode once scroll is stopped
+    this.realtime = false;
+  };
+  
+  
+  Canvas.prototype.playScroll = function(){
+      _this = this;
+      this.scroll = setInterval(function(){
+        if(_this.buffer != null){
+          _this.drawSignal();
+        }
+      }, 1000/this.pixPerSec);
+  };
+  
   
   Canvas.prototype.selectPlayback=function(e,ui){
-    clearInterval(scroll);
-    var val = ui.value;
-    if(val > this.endtime){
-      $("#playback-slider").slider( "option", "value", this.lastTimeFrame);
+    console.log(this.startPixOffset);
+    if(this.startPixOffset == 0){
+      console.log("whar");
+      if(this.scroll){
+        console.log("shouldn't be hear");
+        this.pauseScroll();
+      }
+      var val = ui.value;
+      if(val > this.endtime){
+        console.log("am i heres??");
+        $("#playback-slider").slider( "option", "value", this.lastTimeFrame);
       
-    }else{
-      this.lastTimeFrame= this.makeTimeKey(val);
-      this.canvasScroll = false;
-      this.drawSignal();
+      }else{
+        console.log("I really want to be here you know");
+        this.lastTimeFrame= this.makeTimeKey(val);
+        this.drawSignal();
+      }
     }
   };
   
   //scale slider 
   
   Canvas.prototype.selectScale=function(e,ui){
-    this.autoScale = false;
-    this.max = parseInt(ui.value,0);
+    this.scale = Math.pow(10, ui.value);;
+    if(!this.scroll){
+      this.drawSignal();
+    }
   };
+  
+  //let's roll 
+  canvas.playScroll(); //get these wheels moving!
+  
   
   //end playback slider
 

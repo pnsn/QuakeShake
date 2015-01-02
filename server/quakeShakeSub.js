@@ -34,13 +34,14 @@ var sub = redis.createClient();
 sub.subscribe(ARGS['channel']);//subscribe to Pub channel
 io.on('connection', function(client){ 
   sub.on('message', function(channel, msg) {
-    console.log("from channel: " + channel + " msg: " + msg);
-  
+    // console.log("from channel: " + channel + " msg: " + msg);
+    console.log("msg.length: " + msg.length );
     client.send(msg);
   });
-
-    client.on('message', function(msg) {
-         });
+      
+    // This is a one way street  
+    // client.on('message', function(msg) {
+    //      });
 
     client.on('disconnect', function() {
          //don't do this
