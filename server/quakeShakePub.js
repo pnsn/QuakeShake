@@ -88,7 +88,7 @@ function getData(chan){
       chan.start = message.starttime;
       pub.publish(redisKey, JSON.stringify(message));
       // console.log("from scnl:" + message.sta + ":" + message.chan + ":" + message.net + ":" + message.loc);
-      console.log(chan.sta + " " + (lastEndtime - message.starttime));
+      // console.log(chan.sta + " " + (lastEndtime - message.starttime));
       lastEndtime = message.endtime;
       // console.log("packet length " + message.data.length);
       // console.log("elapsed time = " + (message.endtime - message.starttime));
