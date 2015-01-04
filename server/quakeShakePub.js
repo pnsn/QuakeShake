@@ -1,7 +1,7 @@
 //Connect to Earthworm waveserver to retrieve traceBuf2 packages for a given SCNL and time window 
 //use redis sub/pub design to broadcast to listening node app(s)
 //call with following format 
-//node quakeShakePub.js server=host port=port sta=RCM chan=EHZ net=UW
+//node quakeShakePub.js waveHost=host wavePort=port# sta=RCM chan=EHZ net=UW redisPort=redisPort redisHost = port#
 //or
 //node server/quakeShakePub.js server=import02.ess.washington.edu  port=16022 sta=HWK1 chan=HNZ net=UW
 
@@ -23,8 +23,13 @@ process.argv.forEach(function(val, index, array) {
 });
 
 
-var HOST = ARGS['server'];
-var PORT = ARGS['port'];
+var WAVE_HOST = ARGS['waveHost'];
+var WAVE_PORT = ARGS['wavePort'];
+var REDIS_PORT = ARGS['redisPort'];
+var REDIS_HOST = ARGS['redisHost'];
+
+console.log(WAVE_HOST);
+console.log(WAVE_PORT);
 //commenting these out right now and 
 //hard coding in three hawk chans
 // var scnl={
@@ -54,11 +59,11 @@ var scnls = [new Scnl({sta: 'HWK1', chan: 'HNZ', net: 'UW', loc: '--'}),
 // }
 var  daemon = true;
 
-var pub = redis.createClient();
+var pub = redis.createClient(REDIS_PORT, REDIS_HOST);
 
 
 console.log("To subscribe to this channel start quakeShakeSub with:");
-console.log("node server/quakeShakeSub channel=" + redisKey + " port=n");
+console.log("node server/quakeShakeSub channel=" + redisKey + " port=n redisHost=thishost redisPort=" + REDIS_PORT);
 
 //for testing
 var lastEndtime = Date.now();
@@ -69,7 +74,7 @@ function getData(chan){
   //data: fires when data is buffered
   //close fires on waverserver closes connection
 
-  var ws = new Waveserver(HOST, PORT, chan, Date.now());
+  var ws = new Waveserver(WAVE_HOST, WAVE_PORT, chan, Date.now());
   ws.connect();
   //parse getScnlRaw flag and decide whether to disconnect or continue
   ws.on('header', function(header){
