@@ -10,26 +10,22 @@
 // var net = require('net');
 var Waveserver = require(__dirname + '/../lib/waveserver');
 var redis = require('redis');
+var PublishScnls = require(__dirname + '/../config/hawks3ZPub.conf.js'); //unique conf file for this process
+
 
 //ARGS 
 
-var ARGS={};
-process.argv.forEach(function(val, index, array) {
+// var ARGS={};
+// process.argv.forEach(function(val, index, array) {
+// 
+//   if(val.match(/=.*/i)){
+//     var keyVal = val.split("=");
+//     ARGS[keyVal[0]] = keyVal[1];
+//   }
+// });
 
-  if(val.match(/=.*/i)){
-    var keyVal = val.split("=");
-    ARGS[keyVal[0]] = keyVal[1];
-  }
-});
 
 
-var WAVE_HOST = ARGS['waveHost'];
-var WAVE_PORT = ARGS['wavePort'];
-var REDIS_PORT = ARGS['redisPort'];
-var REDIS_HOST = ARGS['redisHost'];
-
-console.log(WAVE_HOST);
-console.log(WAVE_PORT);
 //commenting these out right now and 
 //hard coding in three hawk chans
 // var scnl={
@@ -41,13 +37,19 @@ console.log(WAVE_PORT);
 
 //use scnl to create redis key worm:sta:chan:net:loc:start
 // var redisKey = "worm:" + scnl['sta'] + ":" + scnl['chan'] + ":" + scnl['net'] + ":" + scnl['loc'];
-var redisKey= "hawks3Z";
 var scnlIndex = 0;
 
-var scnls = [new Scnl({sta: 'HWK1', chan: 'HNZ', net: 'UW', loc: '--'}),
-             new Scnl({sta: 'HWK2', chan: 'HNZ', net: 'UW', loc: '--'}),
-             new Scnl({sta: 'HWK3', chan: 'HNZ', net: 'UW', loc: '--'})];
-             
+//get configs
+
+var conf = new PublishScnls();
+var redisKey=conf.key;
+var scnls = conf.scnls;
+var waveHost = conf.waveHost;
+var wavePort = conf.wavePort;
+var redisPort = conf.redisPort;
+var redisHost = conf.redisHost;
+
+
 //run this as a realtime daemon or as a discreet chunk 
 //discreet chunks aren't really part of the plan right now
 // if(ARGS['start'] && ARGS['end']){
@@ -59,11 +61,11 @@ var scnls = [new Scnl({sta: 'HWK1', chan: 'HNZ', net: 'UW', loc: '--'}),
 // }
 var  daemon = true;
 
-var pub = redis.createClient(REDIS_PORT, REDIS_HOST);
+var pub = redis.createClient(redisPort, redisHost);
 
 
 console.log("To subscribe to this channel start quakeShakeSub with:");
-console.log("node server/quakeShakeSub channel=" + redisKey + " port=n redisHost=thishost redisPort=" + REDIS_PORT);
+console.log("node server/quakeShakeSub channel=" + redisKey + " port=n redisHost=thishost redisPort=" + redisPort);
 
 //for testing
 var lastEndtime = Date.now();
@@ -74,7 +76,7 @@ function getData(chan){
   //data: fires when data is buffered
   //close fires on waverserver closes connection
 
-  var ws = new Waveserver(WAVE_HOST, WAVE_PORT, chan, Date.now());
+  var ws = new Waveserver(waveHost, wavePort, chan, Date.now());
   ws.connect();
   //parse getScnlRaw flag and decide whether to disconnect or continue
   ws.on('header', function(header){
@@ -95,8 +97,8 @@ function getData(chan){
       // console.log("from scnl:" + message.sta + ":" + message.chan + ":" + message.net + ":" + message.loc);
       // console.log(chan.sta + " " + (lastEndtime - message.starttime));
       lastEndtime = message.endtime;
-      // console.log("packet length " + message.data.length);
-      // console.log("elapsed time = " + (message.endtime - message.starttime));
+      console.log("packet length " + message.data.length);
+      console.log("elapsed time = " + (message.endtime - message.starttime));
     }
   
   });
@@ -139,15 +141,4 @@ function findChan(msg){
 //the first call
 var end = Date.now();
 getData(scnls[0]);
-
-//simple scnl object
-function Scnl(scnl){
-  this.sta = scnl.sta;
-  this.chan = scnl.chan;
-  this.net = scnl.net;
-  this.loc = scnl.loc;
-  this.stop= Date.now();
-  this.start = this.stop -1000;
-  this.lastBufStart = this.start;
-}
 
