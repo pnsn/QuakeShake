@@ -62,7 +62,10 @@ $("#button-realtime").click(function(){
   
 //websocket stuff
 
-  var socket = io('http://realtime.pnsn.org/');
+  // var socket = io('http://realtime.pnsn.org/');
+  // var socket = io('http://54.148.52.40');
+  var socket = io('http://quakeshakeLB-814759012.us-west-2.elb.amazonaws.com');
+  // var socket = io('http://54.191.250.210:80');
   
   socket.on('connect', function(data){
     // setStatus('connected');
