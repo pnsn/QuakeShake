@@ -1,35 +1,55 @@
-#page{
-  margin:20px;
-}
-
-#status{
-  height:20px;
-/*  width:80px;*/
+#status {
+  height: 20px;
+  /*  width:80px;*/
   margin-bottom: 50px;
-  color:red;
+  color: red;
 }
 
-
-#zoom-slider{
-  margin-top:25px;
-  width:300px;
+#quakeShake {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-#playback-slider{
-  clear:both;
-  margin-top: 20px;
-  width:300px;
+.slidertime, #sliderVa {
+  display: none;
 }
 
-.slidertime{
-  margin-top:5px;
-  float:left;
+#quick-shake {
+  text-align: center;
 }
 
-#sliderRight{
-  margin-left:100px;
+#quake-controls {
+  overflow: hidden;
+  display: block;
+  margin-top: 15px;
+  margin-bottom: 20px;
+}
+#quake-controls #zoom, #quake-controls #playback {
+  margin-top: 5px;
+  width: 300px;
+}
+#quake-controls .controls {
+  display: inline-block;
+  float: left;
+  margin-left: 6%;
+}
+#quake-controls .ui-state-default, #quake-controls .ui-widget-content .ui-state-default, #quake-controls .ui-widget-header .ui-state-default {
+  background: #27ae60 !important;
+  border: 1px solid #00102F !important;
+}
+#quake-controls .disabled {
+  opacity: 0.4;
+}
+#quake-controls .ui-widget-content {
+  background-image: url("/assets/slider_gradient.png") !important;
 }
 
-#sliderMid{
-  margin-left:100px;
+.slidertime {
+  margin-top: 5px;
+  float: left;
+}
+
+#sliderRight, #sliderMid {
+  margin-left: 100px;
 }

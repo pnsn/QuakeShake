@@ -31,7 +31,14 @@ var channels = [
     })
 ];
    $("#playback-slider").slider({
-     slide: function(e, ui){canvas.selectPlayback(e, ui);}
+     slide: function(e, ui){
+
+       if (!canvas.realtime){
+         $("#button-play").removeClass("disabled");
+         $("#button-stop, #button-realtime").addClass("disabled");
+       }
+       canvas.selectPlayback(e, ui);
+     }
    });
   
    $("#zoom-slider").slider({
@@ -46,27 +53,36 @@ var channels = [
   //every sample rate(pixel) redraw
 
 $("#button-play").click(function(){
-  canvas.playScroll();
+  if(!$("#button-play").hasClass("disabled")){
+    canvas.playScroll();
+    $("#button-realtime, #button-stop").removeClass("disabled");
+    $("#button-play").addClass("disabled");
+  }
   return false;
 });
 
 $("#button-stop").click(function(){
-  canvas.pauseScroll();
+  if(!$("#button-stop").hasClass("disabled")){
+    canvas.pauseScroll();
+    $("#button-play").removeClass("disabled");
+    $("#button-stop, #button-realtime").addClass("disabled");
+  }
   return false;
 });
 
 $("#button-realtime").click(function(){
-  canvas.realtime=true;
+    //hide when done
+  if(!$("#button-realtime").hasClass("disabled") && !canvas.realtime){
+    $("#button-realtime").addClass("disabled");
+    canvas.realtime=true;
+  }
   return false;
 });
   
 //websocket stuff
 
-  // var socket = io('http://realtime.pnsn.org/');
-  // var socket = io('http://54.148.52.40');
-  var socket = io('http://quakeshakeLB-814759012.us-west-2.elb.amazonaws.com');
-  // var socket = io('http://54.191.250.210:80');
-  
+  // var socket = io('http://realtime.pnsn.org:80');
+   var socket = io('http://quakeshakeLB-814759012.us-west-2.elb.amazonaws.com:80');
   socket.on('connect', function(data){
     // setStatus('connected');
     // socket.emit('subscribe', {channel: "worm:RS:EHZ:UW:--"});
@@ -114,7 +130,7 @@ $("#button-realtime").click(function(){
   //initial params that should be consistent across all channels on page
   function Canvas(){
     this.pixPerSec         = 10;  //10 pix/sec = samples second i.e. the highest resolution we can display
-    this.timeWindowSec  = 90;
+    this.timeWindowSec  = 102.4;
     this.timeStep = 1000/this.pixPerSec;
     this.channelHeight  = 200; //how many pix for each signal
     this.height         = null;
@@ -126,7 +142,7 @@ $("#button-realtime").click(function(){
     this.starttime      = Date.now()*1000; //make these real big and real small so they will be immediately overwritten
     this.endtime        = 0;
     this.colors         =  {
-                            shBlue: '#2A5980',
+                            shBlue: '#00102F',
   	                        shGreen: '#5CBD59',
   	                        shDarkBlue: "#061830"
                           };
@@ -268,13 +284,11 @@ $("#button-realtime").click(function(){
         }
         // //this.scale is default 1 and adjusted by zoom slider
           max = parseInt(Math.abs(max -mean)*this.scale,0);
-        ///FIXME
-        // max = 1;
         
-        //FIXME Debugging
-        $("#status").text("Pad by " + pad + ", tail:" + tail + ", bufferLength: " + count );
-        var s = channel.sta.toLowerCase();
-        $("#status-" + s).text(s+ ":" +  " mean: " + mean + ", max: " + max + ", min:" + min + ", sum: " + sum  );        
+        // //FIXME Debugging
+        // $("#status").text("Pad by " + pad + ", tail:" + tail + ", bufferLength: " + count );
+        // var s = channel.sta.toLowerCase();
+        // $("#status-" + s).text(s+ ":" +  " mean: " + mean + ", max: " + max + ", min:" + min + ", sum: " + sum  );        
       
         
     		ctx.strokeStyle = channel.lineColor;
@@ -350,7 +364,7 @@ $("#button-realtime").click(function(){
     
     //scnl label
     ctx.font = "15px Helvetica, Arial, sans-serif";
-    ctx.strokeStyle = this.axisColor;      
+    ctx.strokeStyle = "#119247"; // axis color    
     ctx.stroke();
     
     
@@ -364,7 +378,7 @@ $("#button-realtime").click(function(){
       ctx.moveTo(0,  chanCenter);
       ctx.lineTo(this.width, chanCenter);
     }
-    ctx.strokeStyle = "#CCCCCC";
+    ctx.strokeStyle = "#CCCCCC"; //middle line
     ctx.stroke();
     //end axis
     
@@ -390,7 +404,7 @@ $("#button-realtime").click(function(){
       canvasIndex+= pixInterval;
       tickTime+=this.tickInterval;
     }
-    ctx.strokeStyle = "#CCCCCC";
+    ctx.strokeStyle = "#CCCCCC"; //vertical time lines
     ctx.stroke();
     
     

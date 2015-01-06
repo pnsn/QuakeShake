@@ -13,30 +13,6 @@ var redis = require('redis');
 var PublishScnls = require(__dirname + '/../config/hawks3ZPub.conf.js'); //unique conf file for this process
 
 
-//ARGS 
-
-// var ARGS={};
-// process.argv.forEach(function(val, index, array) {
-// 
-//   if(val.match(/=.*/i)){
-//     var keyVal = val.split("=");
-//     ARGS[keyVal[0]] = keyVal[1];
-//   }
-// });
-
-
-
-//commenting these out right now and 
-//hard coding in three hawk chans
-// var scnl={
-//   'sta':  ARGS['sta'].toUpperCase(),
-//   'chan': ARGS['chan'].toUpperCase(),
-//   'net' : ARGS['net'].toUpperCase(),
-//   'loc' : (ARGS['loc'] == null ? "--" : ARGS['loc'].toUpperCase())// : "--")
-// };
-
-//use scnl to create redis key worm:sta:chan:net:loc:start
-// var redisKey = "worm:" + scnl['sta'] + ":" + scnl['chan'] + ":" + scnl['net'] + ":" + scnl['loc'];
 var scnlIndex = 0;
 
 //get configs
@@ -59,6 +35,7 @@ var redisHost = conf.redisHost;
 //   var end = Date.now();
 //   var start = end  -1;
 // }
+
 var  daemon = true;
 
 var pub = redis.createClient(redisPort, redisHost);
@@ -141,4 +118,3 @@ function findChan(msg){
 //the first call
 var end = Date.now();
 getData(scnls[0]);
-
