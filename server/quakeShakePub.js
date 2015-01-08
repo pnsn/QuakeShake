@@ -10,7 +10,24 @@
 // var net = require('net');
 var Waveserver = require(__dirname + '/../lib/waveserver');
 var redis = require('redis');
-var PublishScnls = require(__dirname + '/../config/hawks3ZPub.conf.js'); //unique conf file for this process
+
+var ARGS={};
+process.argv.forEach(function(val, index, array) {
+
+  if(val.match(/=.*/i)){
+    var keyVal = val.split("=");
+    ARGS[keyVal[0]] = keyVal[1];
+  }
+});
+
+if(ARGS['config']==null){
+  console.log("You must supply config file as first arguement Usage:");
+  console.log("Add config file to the config directory and name it [config]Pub.conf.js");
+  console.log("node server/quakeShakePub config=[config]");
+  process.exit(1);
+}
+
+var PublishScnls = require(__dirname + "/../config/" + ARGS['config'] + "Pub.conf.js"); //unique conf file for this process
 
 
 var scnlIndex = 0;
@@ -71,7 +88,7 @@ function getData(chan){
     if(message.starttime > chan.start){
       chan.start = message.starttime;
       pub.publish(redisKey, JSON.stringify(message));
-      // console.log("from scnl:" + message.sta + ":" + message.chan + ":" + message.net + ":" + message.loc);
+      console.log("from scnl:" + message.sta + ":" + message.chan + ":" + message.net + ":" + message.loc);
       // console.log(chan.sta + " " + (lastEndtime - message.starttime));
       lastEndtime = message.endtime;
       console.log("packet length " + message.data.length);

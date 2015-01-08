@@ -53,8 +53,8 @@ $("#button-realtime").click(function(){
   
 //websocket stuff
 
-  // var socket = io('http://realtime.pnsn.org:80');
-   var socket = io('http://quakeshakeLB-814759012.us-west-2.elb.amazonaws.com:80');
+  var socket = io('http://realtime.pnsn.org:80');
+   // var socket = io('http://quakeshakeLB-814759012.us-west-2.elb.amazonaws.com:80');
   socket.on('connect', function(data){
     // setStatus('connected');
     // socket.emit('subscribe', {channel: "worm:RS:EHZ:UW:--"});

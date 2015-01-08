@@ -46,7 +46,7 @@ channels = [
       sta: "HWK2",  
       chan: "HNZ", 
       net: "UW", 
-      loc: "--", 
+      loc: "00", 
       max: null,
       position: 1, //from top 0 is highest
       lineColor: colors.shGreen
