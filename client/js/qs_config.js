@@ -10,7 +10,7 @@ var colors ={
 
 
 canvasConfig =function canvasConfig(){
-  this.pixPerSec      = 10;  //10 pix/sec = samples second i.e. the highest resolution we can display
+  this.pixPerSec      = 20;  //10 pix/sec = samples second i.e. the highest resolution we can display
   this.timeWindowSec  = 102.4;
   this.timeStep       = 1000/this.pixPerSec;
   this.channelHeight  = 200; //how many pix for each signal
@@ -22,13 +22,19 @@ canvasConfig =function canvasConfig(){
 	this.tickInterval   = 10*1000;
   this.starttime      = Date.now()*1000; //make these real big and real small so they will be immediately overwritten
   this.endtime        = 0;
-  this.startPixOffset = this.width; //starttime pixelOffset
+  this.startPixOffset = this.width;//starttime pixelOffset
   this.lastTimeFrame  = null; // track the time of the last time frame(left side of canvas this will be incremented each interval)
   this.canvasElement  = document.getElementById("quakeShake");
   this.localTime      = true;
-  this.scale          = 1; 
+  this.stationScalar  =3.207930*Math.pow(10,5)*9.8; // count/scalar => %g
+  //log values
+  this.scale          = 2; //strarting scale slide value 
+  this.zoomSliderMin  = 0;
+  this.zoomSliderMax  = 3;
+  //end log values
   this.realtime       = true; //realtime will fast forward if tail of buffer gets too long.
   this.scroll         = null; //sets scrolling
+  this.timeout        = 30; //Number of minutes to keep active before prompt
 };
               
               
@@ -39,7 +45,7 @@ channels = [
     net: "UW", 
     loc: "--", 
     max: null,
-    position: 0, //from top 0 is highest
+    position: 2, //from top 0 is highest
     lineColor: colors.shBlue
   }),
       new Scnl({
@@ -57,10 +63,12 @@ channels = [
       net: "UW", 
       loc: "--", 
       max: null,
-      position: 2, //from top 0 is highest
+      position: 0, //from top 0 is highest
       lineColor: colors.shDarkBlue
     })
 ];
+
+host = "http://quakeshakeLB-814759012.us-west-2.elb.amazonaws.com:80"
 
 function Scnl(scnl){
   //this.buf = [];

@@ -1,10 +1,19 @@
 //client side of quakeShake 
 $(function(){  
   var canvas = new Canvas(new canvasConfig);
-
+  //returns param value (from stack overflow)
+  $.urlParam = function(name){
+      var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+      if (results==null){
+         return null;
+      }
+      else{
+         return results[1] || 0;
+      }
+  };
+// Controls stuff
    $("#playback-slider").slider({
      slide: function(e, ui){
-
        if (!canvas.realtime){
          $("#button-play").removeClass("disabled");
          $("#button-stop, #button-realtime").addClass("disabled");
@@ -12,52 +21,55 @@ $(function(){
        canvas.selectPlayback(e, ui);
      }
    });
-  
+    
    $("#zoom-slider").slider({
-     min: -1, //logs
-     max: 3,
+     min: canvas.zoomSliderMin, //logs
+     max: canvas.zoomSliderMax,
+     value: canvas.scale,
      step: .05,
      slide: function(e, ui){canvas.selectScale(e, ui);}
    });
-
-
-  
+   
+   
   //every sample rate(pixel) redraw
 
-$("#button-play").click(function(){
-  if(!$("#button-play").hasClass("disabled")){
-    canvas.playScroll();
-    $("#button-realtime, #button-stop").removeClass("disabled");
-    $("#button-play").addClass("disabled");
-  }
-  return false;
-});
+  $("#button-play").click(function(){
+    if(!$("#button-play").hasClass("disabled")){
+      canvas.playScroll();
+      $("#button-realtime, #button-stop").removeClass("disabled");
+      $("#button-play").addClass("disabled");
+    }
+    return false;
+  });
 
-$("#button-stop").click(function(){
-  if(!$("#button-stop").hasClass("disabled")){
-    canvas.pauseScroll();
-    $("#button-play").removeClass("disabled");
-    $("#button-stop, #button-realtime").addClass("disabled");
-  }
-  return false;
-});
+  $("#button-stop").click(function(){
+    if(!$("#button-stop").hasClass("disabled")){
+      canvas.pauseScroll();
+      $("#button-play").removeClass("disabled");
+      $("#button-stop, #button-realtime").addClass("disabled");
+    }
+    return false;
+  });
 
-$("#button-realtime").click(function(){
-    //hide when done
-  if(!$("#button-realtime").hasClass("disabled") && !canvas.realtime){
-    $("#button-realtime").addClass("disabled");
-    canvas.realtime=true;
-  }
-  return false;
-});
+  $("#button-realtime").click(function(){
+      //hide when done
+    if(!$("#button-realtime").hasClass("disabled") && !canvas.realtime){
+      $("#button-realtime").addClass("disabled");
+      canvas.realtime=true;
+    }
+    return false;
+  });
+//end controls stuff
   
 //websocket stuff
 
-  var socket = io('http://realtime.pnsn.org:80');
-   // var socket = io('http://quakeshakeLB-814759012.us-west-2.elb.amazonaws.com:80');
+  // var socket = io('http://realtime.pnsn.org:80');
+   var socket = io(host);
   socket.on('connect', function(data){
     // setStatus('connected');
     // socket.emit('subscribe', {channel: "worm:RS:EHZ:UW:--"});
+    canvas.setTimeout();
+    canvas.fullWidth();
   });
 
   socket.on('reconnecting', function(data){
@@ -67,12 +79,11 @@ $("#button-realtime").click(function(){
   socket.on('message', function (message) {
       var data = JSON.parse(message);
       canvas.updateBuffer(data);
+
   });
   
-  //end socket stuff
+//end socket stuff
 
- 
-  
   //initial params that should be consistent across all channels on page
   function Canvas(config){
     this.pixPerSec      = config.pixPerSec;  //10 pix/sec = samples second i.e. the highest resolution we can display
@@ -91,12 +102,14 @@ $("#button-realtime").click(function(){
     this.lastTimeFrame  = config.lastTimeFrame; // track the time of the last time frame(left side of canvas this will be incremented each interval)
     this.canvasElement  = config.canvasElement;
     this.localTime      = config.localTime;
-    this.scale          = config.scale; 
+    this.stationScalar  = config.stationScalar;
+    this.scale          = config.scale;
+    this.zoomSliderMin  = config.zoomSliderMin;
+    this.zoomSliderMax  = config.zoomSliderMax;
     this.realtime       = config.realtime; //realtime will fast forward if tail of buffer gets too long.
     this.scroll         = config.scroll; //sets scrolling
+    this.timeout        = config.timeout; //Number of minutes to keep active
   };
-  
-  
   
   // incoming data are appended to buf
   // drawing is done from left to right (old to new)
@@ -113,7 +126,7 @@ $("#button-realtime").click(function(){
   //        ....
   //}
   
-  //called when new data arrive. Funciton independently from 
+  //called when new data arrive. Function independently from 
   // drawSignal method which is called on a sampRate interval
   Canvas.prototype.updateBuffer = function(packet){
      //we want to be writting new data just inside of canvas left
@@ -126,7 +139,8 @@ $("#button-realtime").click(function(){
       this.height = channels.length*this.channelHeight + 44; 
       this.canvasElement.height = this.height;
       this.canvasElement.width = this.width;
-      
+      // this.updateGs(this.scale);
+         
     }
     
     
@@ -150,14 +164,12 @@ $("#button-realtime").click(function(){
         if(!this.buffer[this.makeTimeKey(_t)]){
           this.buffer[this.makeTimeKey(_t)] ={};
         }
-        this.buffer[this.makeTimeKey(_t)][this.makeChanKey(packet)] = packet.data[_index];
+        this.buffer[this.makeTimeKey(_t)][this.makeChanKey(packet)] = packet.data[_index]/this.stationScalar;
         _t+=this.timeStep; 
         
       }
     } 
   };
-  
-
   
   Canvas.prototype.drawSignal = function(){
     if(this.scroll){
@@ -199,7 +211,6 @@ $("#button-realtime").click(function(){
       }
     }
     
-    
     // FIND MEAN AND Extreme vals
     var start = this.lastTimeFrame;
 	  var stop = this.lastTimeFrame + this.timeWindowSec*1000;
@@ -208,17 +219,19 @@ $("#button-realtime").click(function(){
       ctx.clearRect( 0, 0, this.width, this.height );
   		ctx.lineWidth = this.lineWidth;
       this.drawAxes(ctx);
-  		ctx.beginPath();
-      
+  		
+      ctx.beginPath();
+
       //iterate through all channels and draw
       for(var i=0; i< channels.length; i++){
         var channel = channels[i];
         start = this.lastTimeFrame;
       
+        
         //find mean and max
         var sum=0;
-        var min  = Number.MAX_VALUE;
-        var max = -Number.MAX_VALUE;
+        // var min = Number.MAX_VALUE;
+        // var max = -Number.MAX_VALUE;
         //use full array for ave an max
         var starttime = this.starttime;
         var count =0;
@@ -226,21 +239,22 @@ $("#button-realtime").click(function(){
           if(this.buffer[starttime] && this.buffer[starttime][channel.key]){
             var val = this.buffer[starttime][channel.key];
             sum+=val;
-            max = val > max ? val : max;
-            min = val < min ? val :min;
+            // max = val > max ? val : max;
+            // min = val < min ? val :min;
             count++;
             
           }
           starttime+=this.timeStep;
         }
-        var mean = parseInt(sum/count,0);
+        var mean = sum/count;
         
-        //switch vals if min is further from center
-        if(Math.abs(max - mean) < Math.abs(min - mean)){
-          max = min; 
-        }
-        // //this.scale is default 1 and adjusted by zoom slider
-          max = parseInt(Math.abs(max -mean)*this.scale,0);
+        // //switch vals if min is further from center
+        // if(Math.abs(max - mean) < Math.abs(min - mean)){
+        //   max = min;
+        // };
+        //
+        // this.scale is default 1 and adjusted by zoom slider
+        // max = parseInt(Math.abs(max-mean)*this.scale,0);
         
         // //FIXME Debugging
         // $("#status").text("Pad by " + pad + ", tail:" + tail + ", bufferLength: " + count );
@@ -264,13 +278,16 @@ $("#button-realtime").click(function(){
         while(start <= stop){
           if(this.buffer[start] && this.buffer[start][channel.key]){
             var val = this.buffer[start][channel.key];
-            var norm = ((val - mean) / max ); 
+            var norm = ((val - mean) *Math.pow(10,this.scale)); 
+            
             if(norm < -1)
               norm = -1;
             if(norm > 1)
               norm = 1;
+            
             var chanAxis = 22 + (this.channelHeight/2) + this.channelHeight*channel.position; //22 is offset for header timeline.
             var yval= Math.round( (this.channelHeight) / 2 * norm + chanAxis);
+            
             if(gap){
               ctx.moveTo( canvasIndex, yval);
               gap =false;
@@ -295,45 +312,49 @@ $("#button-realtime").click(function(){
     return parseInt(t/this.timeStep,0)*this.timeStep;
   };
 
-
   Canvas.prototype.makeChanKey = function(packet){
     //remove the dashes that are the default for loc = null
     var loc = (!packet.loc || packet.loc == "--" || this.loc =="") ?  "" : ("_" + packet.loc);
     return  packet.sta.toLowerCase() + "_" + packet.chan.toLowerCase() + "_" + packet.net.toLowerCase()  + loc;
-  };
-  
+  };  
   
   Canvas.prototype.drawAxes = function(ctx){
+    //actual edge of display (axes labels are outside of this frame)
+    var edge = {
+      left:  0,
+      right: this.width,
+      top:  20,
+      bottom: this.height-20
+    };
+  
     //some axis lines
     ctx.beginPath();
     //x-axes
-    ctx.moveTo(0, 20); //top
-    ctx.lineTo(this.width, 20);
-    ctx.moveTo(0, this.height - 20); //bottom
-    ctx.lineTo(this.width, this.height - 20);
+    ctx.moveTo(edge.left, edge.top); //top
+    ctx.lineTo(edge.right, edge.top);
+    ctx.moveTo(edge.left,  edge.bottom); //bottom
+    ctx.lineTo(edge.right, edge.bottom);
 
     //y-axes
-    
-    ctx.moveTo(0,20 );// left
-    ctx.lineTo(0, this.height -20);
-    ctx.moveTo(this.width, 20 );//right
-    ctx.lineTo(this.width, this.height -20);
+    ctx.moveTo(edge.left, edge.top);// left
+    ctx.lineTo(edge.left, edge.bottom);
+    ctx.moveTo(edge.right, edge.top);//right
+    ctx.lineTo(edge.right, edge.bottom);
     
     //scnl label
     ctx.font = "15px Helvetica, Arial, sans-serif";
     ctx.strokeStyle = "#119247"; // axis color    
     ctx.stroke();
     
-    
     ctx.beginPath();
     //channel center lines and labels:
     for(var i=0; i< channels.length; i++){
       var channel = channels[i];
       var yOffset= channel.position*this.channelHeight; 
-      ctx.fillText(channel.sta, 10, 40+ yOffset);
+      ctx.fillText(channel.sta, edge.left + 10, 40+ yOffset);
       var chanCenter = 22 + this.channelHeight/2 +yOffset;      
-      ctx.moveTo(0,  chanCenter);
-      ctx.lineTo(this.width, chanCenter);
+      ctx.moveTo(edge.left,  chanCenter);
+      ctx.lineTo(edge.right, chanCenter);
     }
     ctx.strokeStyle = "#CCCCCC"; //middle line
     ctx.stroke();
@@ -342,7 +363,7 @@ $("#button-realtime").click(function(){
     
     //plot a tick and time at all tickIntervals
     ctx.beginPath();
-    ctx.font = "12px Helvetica, Arial, sans-serif";
+    ctx.font = "13px Helvetica, Arial, sans-serif";
     
     //centerline
     
@@ -352,10 +373,11 @@ $("#button-realtime").click(function(){
     
     var canvasIndex = this.startPixOffset - offset/this.timeStep;
     var pixInterval = this.tickInterval/this.timeStep;
-    while(canvasIndex < this.width + 20){ //allow times to be drawn off of canvas
+    while(canvasIndex < edge.right + 20){ //allow times to be drawn off of canvas
       // ctx.moveTo(canvasIndex, this.height -19);
       ctx.moveTo(canvasIndex, 20);
       ctx.lineTo(canvasIndex, this.height - 15);
+      
       ctx.fillText(this.dateFormat(tickTime), canvasIndex - 23, 12); //top
       ctx.fillText(this.dateFormat(tickTime), canvasIndex - 23, this.height -1); //bottom
       canvasIndex+= pixInterval;
@@ -363,9 +385,6 @@ $("#button-realtime").click(function(){
     }
     ctx.strokeStyle = "#CCCCCC"; //vertical time lines
     ctx.stroke();
-    
-    
-		
   };
   
   //accept milliseconds and return data string of format HH:MM:SS in UTC or local
@@ -380,15 +399,18 @@ $("#button-realtime").click(function(){
       var minutes = d.getUTCMinutes();
       var seconds = d.getUTCSeconds();
     }
+    var time;
     if(hours < 10)
      hours = "0" + hours;
     if(minutes < 10)
       minutes = "0" + minutes;
     if(seconds < 10)
       seconds = "0" + seconds;
-    return hours + ":" + minutes + ":" + seconds;
+    time = hours + ":" + minutes + ":" + seconds;
+    // if(seconds == "00")
+    //   time += " PST";
+    return time;
   };
-  
   
   //playback slider
   Canvas.prototype.updatePlaybackSlider=function(){
@@ -397,12 +419,7 @@ $("#button-realtime").click(function(){
     if(this.scroll){
       $("#playback-slider").slider( "option", "value", this.lastTimeFrame);
     }
-    // $("#sliderLeft").text(this.dateFormat(this.starttime));
-    // $("#sliderRight").text(this.dateFormat(this.lastTimeFrame));
-    // $("#sliderMid").text(this.dateFormat($("#playback-slider").slider( "option", "value")));
-    
-  
-   };
+  };
   
   Canvas.prototype.pauseScroll = function(){
     clearInterval(this.scroll);
@@ -410,8 +427,7 @@ $("#button-realtime").click(function(){
     //take things out of realtime mode once scroll is stopped
     this.realtime = false;
   };
-  
-  
+    
   Canvas.prototype.playScroll = function(){
       _this = this;
       this.scroll = setInterval(function(){
@@ -420,7 +436,6 @@ $("#button-realtime").click(function(){
         }
       }, 1000/this.pixPerSec);
   };
-  
   
   Canvas.prototype.selectPlayback=function(e,ui){
     if(this.startPixOffset == 0){
@@ -438,18 +453,100 @@ $("#button-realtime").click(function(){
     }
   };
   
-  //scale slider 
+  //Handles the connection timeout 
+  Canvas.prototype.setTimeout = function(){
+    if($.urlParam('timeout')||$.urlParam('timeout')==null){
+      
+      //Initial interval for checking state  
+      var idleInterval = setInterval(timerIncrement, 60000); // 60000 = 1 minute
+    
+      var idleTime = 0;
+      
+      //Zero the idle timer on mouse movement or key press
+      // $("body").mousemove(resume);
+      $("body").keypress(resume);
+      $("body").click(resume);
   
-  Canvas.prototype.selectScale=function(e,ui){
-    this.scale = Math.pow(10, ui.value);;
-    if(!this.scroll){
-      this.drawSignal();
+      var MAXTIME = this.timeout + 5; //minute (time to )
+      var MINTIME = this.timeout; //minute
+      var timeAlert = $("#timeout");
+      
+      //I need to fix this
+      var pageHeight = this.channelHeight * (channels.length + 0.5) + 44 + 35;//44 for time offset and 100 for controls;
+      timeAlert.css("height", $(window).height()+"px"); 
+      timeAlert.css("width", $(window).width()+"px"); 
+      $("#timeout").css("padding-top", $(window).height()/2-30 + "px");
+      function timerIncrement() {
+        if (MAXTIME-idleTime>1){
+          $("#timer").html("Stream will stop in "+(MAXTIME-idleTime)+" minutes.");
+        }else if(MAXTIME-idleTime ==1){
+          $("#timer").html("Stream will stop in "+(MAXTIME-idleTime)+" minute.");
+        }else{
+          $("#timer").html("Stream has ended.");
+        }
+
+        if (idleTime == MINTIME){
+          timeAlert.css("display", "block");
+        } else if (idleTime == MAXTIME){
+          socket.close();
+          // canvas.realtime=false;
+        }
+        timeAlert.click(resume);
+        idleTime++;
+      }
+  
+      // Hide the information and 
+      function resume(){
+        if (!socket.connected){
+          // console.log("open socket");
+          socket.open();
+          canvas.realtime=true;
+          // location.reload();
+        }
+        timeAlert.css("display", "none");
+        idleTime = 0;
+      }
     }
   };
   
-  //let's roll 
-  canvas.playScroll(); //get these wheels moving!
+  Canvas.prototype.selectScale=function(e,ui){
+    this.scale = ui.value;
+    if(!this.scroll){
+      this.drawSignal();
+    }
+    // this.updateGs(ui.value);
+    this.updateScale();
+  };
   
+  Canvas.prototype.updateScale=function(){
+    $("#quickShakeScale").css("height", this.channelHeight/2);
+    var scale = Math.pow(10,-this.scale);//3 sig. digits
+    scale = scale.toPrecision(2);
+    // console.log(scale);
+    $("#top").html(scale);
+  };
+  
+  Canvas.prototype.fullWidth=function(){
+    $("#header, #footer, #stage-warning, #full-width").hide();
+    $("#page").css("margin-top", "0px");
+    var offSet=60; //Offset from edge
+    var bannerHeight=$("#hawkBanner").height(); //Make sure there is space for the banner
+    var height = $(window).height()-bannerHeight-100; //banner height && controls height 
+    var width = $(window).width()-1.2*offSet;
+    if (!$("#quickShake").is(":visible")){ 
+      var height = $(window).height()-150; //banner height && controls height
+      var width = $(window).width()-20;
+    }
+    this.channelHeight = height/channels.length;
+    this.width = width;
+    this.startPixOffset = this.width;
+    this.updateScale();
+  };
+  
+  $( window ).resize(function(){
+    location.reload();
+  });
+  canvas.playScroll(); //get these wheels moving!
   
   //end playback slider
 
