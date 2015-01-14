@@ -10,7 +10,7 @@ $(function(){
       else{
          return results[1] || 0;
       }
-  };
+  }
 // Controls stuff
    $("#playback-slider").slider({
      slide: function(e, ui){
@@ -27,7 +27,10 @@ $(function(){
      max: canvas.zoomSliderMax,
      value: canvas.scale,
      step: .05,
-     slide: function(e, ui){canvas.selectScale(e, ui);}
+     slide: function(e, ui){
+       canvas.selectScale(e, ui);
+       $("#quickShakeScale").css("color", "red");
+     }
    });
    
    
@@ -183,17 +186,18 @@ $(function(){
       //ADJUST PLAYwe need to adjust play if data on end of buffer tails off canvas
       //ideally we want new data written on canvas at about 10 seconds in 
       if(this.realtime){
-        var tail = parseInt(((this.endtime - this.lastTimeFrame)/1000 * this.pixPerSec) - this.width + this.startPixOffset, 0);
-        var pad = 0;
-        if(tail > -50 && tail < 20)
+        var tail = parseInt(this.startPixOffset + ((this.endtime - this.lastTimeFrame)/1000 * this.pixPerSec) - this.width, 0);
+        if(tail < -50)
+          pad=0;
+        else if(tail < 20)
           pad =2;
-        if(tail > 20)
+        else if(tail < 100)
           pad = 4;
-        if(tail > 100)
+        else if(tail < 1000)
           pad =9;
-        if(tail > 1000)
+        else if(tail < 10000)
           pad=99;
-        if(tail > 10000)
+        else
           pad=9999;
           //need to adjust these two values if we added padding
         this.lastTimeFrame += pad*this.timeStep;
@@ -407,8 +411,8 @@ $(function(){
     if(seconds < 10)
       seconds = "0" + seconds;
     time = hours + ":" + minutes + ":" + seconds;
-    // if(seconds == "00")
-    //   time += " PST";
+    if(seconds == "00")
+      time += " PST";
     return time;
   };
   
@@ -455,8 +459,7 @@ $(function(){
   
   //Handles the connection timeout 
   Canvas.prototype.setTimeout = function(){
-    if($.urlParam('timeout')||$.urlParam('timeout')==null){
-      
+    if($.urlParam('timeout')==true||$.urlParam('timeout')==null){ //for some reason I have to put == true...
       //Initial interval for checking state  
       var idleInterval = setInterval(timerIncrement, 60000); // 60000 = 1 minute
     
@@ -521,30 +524,93 @@ $(function(){
   Canvas.prototype.updateScale=function(){
     $("#quickShakeScale").css("height", this.channelHeight/2);
     var scale = Math.pow(10,-this.scale);//3 sig. digits
-    scale = scale.toPrecision(2);
+    if (scale < 0.000099){
+      scale = scale.toExponential(2);
+    } else {
+      scale = scale.toPrecision(2);
+    }
+
     // console.log(scale);
     $("#top").html(scale);
-  };
+  }
   
   Canvas.prototype.fullWidth=function(){
-    $("#header, #footer, #stage-warning, #full-width").hide();
+    $("#header, #footer, #stage-warning, #full-width, #quick-oops").hide();
+    $("#quick-body, #quakeLogo").show();
     $("#page").css("margin-top", "0px");
     var offSet=60; //Offset from edge
     var bannerHeight=$("#hawkBanner").height(); //Make sure there is space for the banner
-    var height = $(window).height()-bannerHeight-100; //banner height && controls height 
+    var height = $(window).height()-$("#page").height()-105; //banner height && controls height 
     var width = $(window).width()-1.2*offSet;
     if (!$("#quickShake").is(":visible")){ 
       var height = $(window).height()-150; //banner height && controls height
       var width = $(window).width()-20;
+      
+      // canvas.mobile();
     }
+    $("#quakeShake").css("top", $("#page").height()+"px");
+    $("#quickShakeScale").css("top", $("#page").height()+21+"px");
     this.channelHeight = height/channels.length;
     this.width = width;
     this.startPixOffset = this.width;
     this.updateScale();
   };
   
+  //absolutely hideous code to deal with mobile menu
+  //I'll fix it when it isn't midnight
+  function mobile(playback) {
+    $("#zoom label").html("Scale (%g)");
+    if(playback && $("#quake-buttons").is(":visible")){
+      $("#playback").show();
+      $("#quake-buttons").toggle("slide");
+      $("#mobile-playback").html("Close");
+    }else if(playback && $("#zoom").is(":visible")){
+      $("#zoom").hide();
+      $("#playback").show();
+      $("#mobile-scale").html("Scale");
+      $("#mobile-playback").html("Close");
+    } else if(!playback && $("#playback").is(":visible")){
+      $("#zoom").show();
+      $("#playback").hide();
+      $("#mobile-playback").html("Playback");
+      $("#mobile-zoom").html("Close");
+    }else if(playback && !$("#quake-buttons").is(":visible")){
+      $("#playback").hide();
+      $("#quake-buttons").toggle("slide");
+      $("#mobile-playback").html("Playback");
+    }else if(!playback && $("#quake-buttons").is(":visible")){
+      $("#zoom").show();
+      $("#quake-buttons").toggle("slide");
+      $("#mobile-scale").html("Close");
+    }else if(!playback && !$("#quake-buttons").is(":visible")){
+      $("#zoom").hide();
+      $("#quake-buttons").toggle("slide");
+      $("#mobile-scale").html("Scale");
+    }
+  }
+  
+    $("#mobile-scale").click(function(event){
+      mobile(false);
+      event.preventDefault();
+    });
+    
+    $("#zoom")
+      .mouseenter(function(){
+        $("#quickShakeScale").css("color", "red");
+      })
+      .mouseleave(function(){
+        $("#quickShakeScale").css("color", "initial");
+      });
+    
+    $("#mobile-playback").click(function(event){
+      mobile(true);
+      event.preventDefault();
+    });
+  
   $( window ).resize(function(){
-    location.reload();
+    if($("#quickShake").is(":visible")){
+      location.reload();
+    }
   });
   canvas.playScroll(); //get these wheels moving!
   

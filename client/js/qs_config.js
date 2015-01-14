@@ -68,7 +68,7 @@ channels = [
     })
 ];
 
-host = "http://quakeshakeLB-814759012.us-west-2.elb.amazonaws.com:80"
+host = "http://eew.pnsn.org/";
 
 function Scnl(scnl){
   //this.buf = [];
