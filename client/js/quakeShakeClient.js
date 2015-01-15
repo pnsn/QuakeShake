@@ -200,7 +200,9 @@ $(function(){
         else
           pad=9999;
           //need to adjust these two values if we added padding
-        this.lastTimeFrame += pad*this.timeStep;
+        if(startPixOffset ==0){
+          this.lastTimeFrame += pad*this.timeStep;
+        }
         this.startPixOffset = Math.max(0,   this.startPixOffset -pad);
       }
     
