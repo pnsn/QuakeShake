@@ -1,2 +1,3 @@
 config/*.conf.js
-*.DS_Store*
+.DS_Store
+DS_Store
