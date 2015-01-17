@@ -10,54 +10,54 @@ $(function(){
       else{
          return results[1] || 0;
       }
-  }
+  };
+  var mobile;
+	//Used to config some items for mobile view
+	if($(document).width() <= 800){mobile = true;}
+	
 // Controls stuff
-   $("#playback-slider").slider({
-     slide: function(e, ui){
-       if (!canvas.realtime){
-         $("#button-play").removeClass("disabled");
-         $("#button-stop, #button-realtime").addClass("disabled");
-       }
-       canvas.selectPlayback(e, ui);
+  $("#playback-slider").slider({
+    slide: function(e, ui){
+     if (!canvas.realtime){
+       $("#play-button").removeClass("disabled");
+       $("#stop-button, #realtime-button").addClass("disabled");
      }
-   });
+     canvas.selectPlayback(e, ui);
+    }
+  });
     
-   $("#zoom-slider").slider({
-     min: canvas.zoomSliderMin, //logs
-     max: canvas.zoomSliderMax,
-     value: canvas.scale,
-     step: .05,
-     slide: function(e, ui){
-       canvas.selectScale(e, ui);
-       $("#quickShakeScale").css("color", "red");
-     }
-   });
-   
-   
-  //every sample rate(pixel) redraw
+  $("#scale-slider").slider({
+   min: canvas.scaleSliderMin, //logs
+   max: canvas.scaleSliderMax,
+   value: canvas.scale,
+   step: .05,
+   slide: function(e, ui){
+     canvas.selectScale(e, ui.value);
+   }
+  });
 
-  $("#button-play").click(function(){
-    if(!$("#button-play").hasClass("disabled")){
+  $("#play-button").click(function(){
+    if(!$("#play-button").hasClass("disabled")){
       canvas.playScroll();
-      $("#button-realtime, #button-stop").removeClass("disabled");
-      $("#button-play").addClass("disabled");
+      $("#realtime-button, #stop-button").removeClass("disabled");
+      $("#play-button").addClass("disabled");
     }
     return false;
   });
 
-  $("#button-stop").click(function(){
-    if(!$("#button-stop").hasClass("disabled")){
+  $("#stop-button").click(function(){
+    if(!$("#stop-button").hasClass("disabled")){
       canvas.pauseScroll();
-      $("#button-play").removeClass("disabled");
-      $("#button-stop, #button-realtime").addClass("disabled");
+      $("#play-button").removeClass("disabled");
+      $("#stop-button, #realtime-button").addClass("disabled");
     }
     return false;
   });
 
-  $("#button-realtime").click(function(){
+  $("#realtime-button").click(function(){
       //hide when done
-    if(!$("#button-realtime").hasClass("disabled") && !canvas.realtime){
-      $("#button-realtime").addClass("disabled");
+    if(!$("#realtime-button").hasClass("disabled") && !canvas.realtime){
+      $("#realtime-button").addClass("disabled");
       canvas.realtime=true;
     }
     return false;
@@ -66,24 +66,39 @@ $(function(){
   
 //websocket stuff
 
-  // var socket = io('http://realtime.pnsn.org:80');
-   var socket = io(host);
-  socket.on('connect', function(data){
-    // setStatus('connected');
-    // socket.emit('subscribe', {channel: "worm:RS:EHZ:UW:--"});
-    canvas.setTimeout();
-    canvas.fullWidth();
-  });
+  if(window.WebSocket){
+    var ws = new WebSocket(host);
+    ws.onopen = function(data) {
+      canvas.setTimeout();
+      canvas.fullWidth();
+    };
 
-  socket.on('reconnecting', function(data){
-    setStatus('reconnecting');
-  });
+    ws.onmessage = function(message, flags) {
+      var data= JSON.parse(message.data);
+       canvas.updateBuffer(data);
+    };
+    
+    
+  }else{
+   host = "http://eew.pnsn.org:80";
+    var socket = io(host);
+    socket.on('connect', function(data){
+      console.log("connecting?");
+      // setStatus('connected');
+      // socket.emit('subscribe', {channel: "worm:RS:EHZ:UW:--"});
+      canvas.setTimeout();
+      canvas.fullWidth();
+    });
+
+    socket.on('reconnecting', function(data){
+      setStatus('reconnecting');
+    });
 
   socket.on('message', function (message) {
       var data = JSON.parse(message);
       canvas.updateBuffer(data);
-
   });
+}
   
 //end socket stuff
 
@@ -107,8 +122,8 @@ $(function(){
     this.localTime      = config.localTime;
     this.stationScalar  = config.stationScalar;
     this.scale          = config.scale;
-    this.zoomSliderMin  = config.zoomSliderMin;
-    this.zoomSliderMax  = config.zoomSliderMax;
+    this.scaleSliderMin  = config.scaleSliderMin;
+    this.scaleSliderMax  = config.scaleSliderMax;
     this.realtime       = config.realtime; //realtime will fast forward if tail of buffer gets too long.
     this.scroll         = config.scroll; //sets scrolling
     this.timeout        = config.timeout; //Number of minutes to keep active
@@ -142,12 +157,9 @@ $(function(){
       this.height = channels.length*this.channelHeight + 44; 
       this.canvasElement.height = this.height;
       this.canvasElement.width = this.width;
-      // this.updateGs(this.scale);
-         
+      // this.updateGs(this.scale);    
     }
-    
-    
-    
+
     if(this.buffer == null)
       this.buffer = {};
     //update times to track oldest and youngest data points
@@ -200,7 +212,7 @@ $(function(){
         else
           pad=9999;
           //need to adjust these two values if we added padding
-        if(startPixOffset ==0){
+        if(this.startPixOffset ==0){
           this.lastTimeFrame += pad*this.timeStep;
         }
         this.startPixOffset = Math.max(0,   this.startPixOffset -pad);
@@ -259,7 +271,7 @@ $(function(){
         //   max = min;
         // };
         //
-        // this.scale is default 1 and adjusted by zoom slider
+        // this.scale is default 1 and adjusted by scale slider
         // max = parseInt(Math.abs(max-mean)*this.scale,0);
         
         // //FIXME Debugging
@@ -463,27 +475,26 @@ $(function(){
   Canvas.prototype.setTimeout = function(){
     if($.urlParam('timeout')==true||$.urlParam('timeout')==null){ //for some reason I have to put == true...
       //Initial interval for checking state  
-      var idleInterval = setInterval(timerIncrement, 60000); // 60000 = 1 minute
+
     
       var idleTime = 0;
       
       //Zero the idle timer on mouse movement or key press
       // $("body").mousemove(resume);
-      $("body").keypress(resume);
-      $("body").click(resume);
+
   
       var MAXTIME = this.timeout + 5; //minute (time to )
       var MINTIME = this.timeout; //minute
-      var timeAlert = $("#timeout");
+      var timeAlert = $("#quick-shake-timeout");
       
       //I need to fix this
       var pageHeight = this.channelHeight * (channels.length + 0.5) + 44 + 35;//44 for time offset and 100 for controls;
       timeAlert.css("height", $(window).height()+"px"); 
       timeAlert.css("width", $(window).width()+"px"); 
-      $("#timeout").css("padding-top", $(window).height()/2-30 + "px");
+      $("#quick-shake-timeout").css("padding-top", $(window).height()/2-30 + "px");
       function timerIncrement() {
         if (MAXTIME-idleTime>1){
-          $("#timer").html("Stream will stop in "+(MAXTIME-idleTime)+" minutes.");
+          $("#timeout-timer").html("Stream will stop in "+(MAXTIME-idleTime)+" minutes.");
         }else if(MAXTIME-idleTime ==1){
           $("#timer").html("Stream will stop in "+(MAXTIME-idleTime)+" minute.");
         }else{
@@ -499,7 +510,7 @@ $(function(){
         timeAlert.click(resume);
         idleTime++;
       }
-  
+      var idleInterval = setInterval(timerIncrement, 60000); // 60000 = 1 minute
       // Hide the information and 
       function resume(){
         if (!socket.connected){
@@ -511,20 +522,21 @@ $(function(){
         timeAlert.css("display", "none");
         idleTime = 0;
       }
+      $("body").keypress(resume);
+      $("body").click(resume);
     }
   };
   
-  Canvas.prototype.selectScale=function(e,ui){
-    this.scale = ui.value;
+  Canvas.prototype.selectScale=function(e,value){
+    this.scale = value;
     if(!this.scroll){
       this.drawSignal();
     }
-    // this.updateGs(ui.value);
     this.updateScale();
   };
   
   Canvas.prototype.updateScale=function(){
-    $("#quickShakeScale").css("height", this.channelHeight/2);
+    $("#quick-shake-scale").css("height", this.channelHeight/2);
     var scale = Math.pow(10,-this.scale);//3 sig. digits
     if (scale < 0.000099){
       scale = scale.toExponential(2);
@@ -532,88 +544,71 @@ $(function(){
       scale = scale.toPrecision(2);
     }
 
-    // console.log(scale);
     $("#top").html(scale);
-  }
+  };
   
+  // Handles sizing of the canvas for different screens
   Canvas.prototype.fullWidth=function(){
-    $("#header, #footer, #stage-warning, #full-width, #quick-oops").hide();
-    $("#quick-body, #quakeLogo").show();
+    var height, width, offset, diff;
+    // Preserve difference in width and offset to prevent jumping
+    diff = this.width-this.startPixOffset;
+    
+    // TODO: get css out of here, if possible
+    $("#header, #footer, #stage-warning, #full-width").hide();
     $("#page").css("margin-top", "0px");
-    var offSet=60; //Offset from edge
-    var bannerHeight=$("#hawkBanner").height(); //Make sure there is space for the banner
-    var height = $(window).height()-$("#page").height()-105; //banner height && controls height 
-    var width = $(window).width()-1.2*offSet;
-    if (!$("#quickShake").is(":visible")){ 
-      var height = $(window).height()-150; //banner height && controls height
-      var width = $(window).width()-20;
-      
-      // canvas.mobile();
+
+    if (mobile){ 
+			$('.slicknav_menu, #menu').hide();
+      height = $(window).height()-110; //banner height && controls height
+      width = $(window).width()-20;
+      $("#playback").css("width",$("#quick-shake-controls").width()-195+"px");
+      $("#quick-shake-canvas").css("top",5+"px");
+    } else {
+      offSet=60; //Offset from edge (to fit scale)
+      height = $(window).height()-$("#page").height()-105; //banner height && controls height 
+      width = $(window).width()-1.2*offSet;
+      $("#quick-shake-scale").css("top", $("#page").height()+22+"px");// 22 for top time stamp
+      $("#quick-shake-canvas").css("top", $("#page").height()+"px");
     }
-    $("#quakeShake").css("top", $("#page").height()+"px");
-    $("#quickShakeScale").css("top", $("#page").height()+21+"px");
+    $("#quick-shake-canvas").css("background-position", (width-100)+"px "+(height-13)+"px");
     this.channelHeight = height/channels.length;
+    this.height = this.channelHeight*channels.length + 44;//44 for top & bottom time stamps
     this.width = width;
-    this.startPixOffset = this.width;
+    
+    this.canvasElement.height=this.height;
+    this.canvasElement.width=this.width;
+    
+    this.timeWindowSec  = this.width/this.pixPerSec;
+    this.startPixOffset = this.width-diff;
     this.updateScale();
   };
   
-  //absolutely hideous code to deal with mobile menu
-  //I'll fix it when it isn't midnight
-  function mobile(playback) {
-    $("#zoom label").html("Scale (%g)");
-    if(playback && $("#quake-buttons").is(":visible")){
-      $("#playback").show();
-      $("#quake-buttons").toggle("slide");
-      $("#mobile-playback").html("Close");
-    }else if(playback && $("#zoom").is(":visible")){
-      $("#zoom").hide();
-      $("#playback").show();
-      $("#mobile-scale").html("Scale");
-      $("#mobile-playback").html("Close");
-    } else if(!playback && $("#playback").is(":visible")){
-      $("#zoom").show();
-      $("#playback").hide();
-      $("#mobile-playback").html("Playback");
-      $("#mobile-zoom").html("Close");
-    }else if(playback && !$("#quake-buttons").is(":visible")){
-      $("#playback").hide();
-      $("#quake-buttons").toggle("slide");
-      $("#mobile-playback").html("Playback");
-    }else if(!playback && $("#quake-buttons").is(":visible")){
-      $("#zoom").show();
-      $("#quake-buttons").toggle("slide");
-      $("#mobile-scale").html("Close");
-    }else if(!playback && !$("#quake-buttons").is(":visible")){
-      $("#zoom").hide();
-      $("#quake-buttons").toggle("slide");
-      $("#mobile-scale").html("Scale");
-    }
-  }
-  
-    $("#mobile-scale").click(function(event){
-      mobile(false);
-      event.preventDefault();
-    });
-    
-    $("#zoom")
-      .mouseenter(function(){
-        $("#quickShakeScale").css("color", "red");
-      })
-      .mouseleave(function(){
-        $("#quickShakeScale").css("color", "initial");
-      });
-    
-    $("#mobile-playback").click(function(event){
-      mobile(true);
-      event.preventDefault();
-    });
-  
+  var x;
+  // Create a delay to simulate end of resizing
   $( window ).resize(function(){
-    if($("#quickShake").is(":visible")){
-      location.reload();
-    }
+    clearTimeout(x);
+    x = setTimeout(canvas.fullWidth(), 500);
   });
+  
+    var lastScale = canvas.scale;
+  $("#quick-shake-canvas").swipe( {
+      pinchStatus:function(event, phase, direction, distance , duration , fingerCount, pinchScale) {
+        // Make sure it is actually a two finger scale and not a tap
+        if(distance > 0 && fingerCount >1 ){
+          canvas.selectScale(event, lastScale + parseFloat(pinchScale) - 1);
+        } 
+        //Save value of scale at the end to use as baseline
+        if (phase === $.fn.swipe.phases.PHASE_END || phase === $.fn.swipe.phases.PHASE_CANCEL){
+          lastScale = canvas.scale;
+        }
+      }
+  });
+  
+  // Trying to prevent overscrolling
+  document.body.addEventListener('touchmove', function(event) {
+    event.preventDefault();
+  }, false);
+  
   canvas.playScroll(); //get these wheels moving!
   
   //end playback slider

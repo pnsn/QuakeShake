@@ -140,7 +140,7 @@ setTimeout(function(){
         gap = true;
       }else{ // no gap here
         if(gap){ //did we just close a gap
-          channel.gapCount ++;
+          channel.gapCount++;
           var lastGap = starttime - lastVal;
           if(lastGap > channel.maxGap)
             channel.maxGap = lastGap;
@@ -148,7 +148,6 @@ setTimeout(function(){
         }
         lastVal = starttime;
         gap = false;
-        
       }
       starttime+=gapTest.timeStep;
     }//while

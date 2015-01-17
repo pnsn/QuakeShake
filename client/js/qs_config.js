@@ -52,7 +52,7 @@ channels = [
       sta: "HWK2",  
       chan: "HNZ", 
       net: "UW", 
-      loc: "00", 
+      loc: "01", 
       max: null,
       position: 1, //from top 0 is highest
       lineColor: colors.shGreen
@@ -68,7 +68,7 @@ channels = [
     })
 ];
 
-host = "http://eew.pnsn.org/";
+host = "ws://wssub.cloudapp.net:8080";
 
 function Scnl(scnl){
   //this.buf = [];
