@@ -68,7 +68,8 @@ channels = [
     })
 ];
 
-host = "ws://wssub.cloudapp.net:8080";
+host = "ws://wsub.trafficmanager.net:8080";
+iohost="http://qsub.trafficmanager.net:80";
 
 function Scnl(scnl){
   //this.buf = [];
