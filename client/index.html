@@ -1,41 +1,72 @@
+<!DOCTYPE html>
 <html>
+
   <head>
- 
-    <title>quakeShake test</title>
-   
-    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
- 
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css" />
-  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
-  <script src="https://cdn.socket.io/socket.io-1.0.0.js"></script>
-  <script src="./js/qs_config.js"></script>
-  <script src="./js/quakeShakeClient.js"></script>
-  
-  <link rel="stylesheet" type="text/css" href="./css/quakeShake.css">
-  
+    <title>QuickShake</title>
+    <link href="assets/favicon.png" rel="shortcut icon" type="image/png">
+    <link href="css/quakeshake.css" media="all" type="text/css" rel="stylesheet" />
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="https://cdn.socket.io/socket.io-1.0.0.js" type="text/javascript"></script>
+    <script src="js/qs_config.js" type="text/javascript"></script>
+    <script src="js/quakeShakeClient.js" type="text/javascript"></script>
+    <link rel="stylesheet" href="css/jquery-ui.min.css">
+    <script src="js/jquery.js"></script>
+    <script src="js/jquery-ui.min.js"></script>
+    <script src="js/jquery.ui.touch-punch.min.js"></script>
+    <script src="js/jquery.touchSwipe.min.js"></script>
+    <meta content="user-scalable=no, initial-scale=1.0" name="viewport"/>
   </head>
- 
+
   <body>
-      <div id='status'></div>
-      <div id='status-hwk1'></div>
-      <div id='status-hwk2'></div>
-      <div id='status-hwk3'></div>
-      <div id ="page">
-        <canvas id="quakeShake"> </canvas>
-        <div id="playback-slider"></div>
-      
-        <div id ="sliderVal"></div>
-<!--        <div class ="slidertime" id="sliderLeft"></div>
-        <div class ="slidertime" id="sliderMid"></div>
-        <div class ="slidertime" id="sliderRight"></div> -->  
-        <div id = "zoom-slider"></div>
-        <p><a id="button-play" href="#"> Play </a></p>
-        <p><a id="button-stop" href="#"> Stop </a></p>
-        <p><a id = "button-realtime" href = "#">Realtime </a></p>
+    
+    <div id="page">
+    <div class="interior">
+    <div id="header">
+      <div id="quick-shake-logo">
+        <img src="assets/quickshakewithpnsn.png" alt="QuickShake Logo" />
       </div>
+    
+      <div id="azure-logo">
+        Powered by
+        <img src="assets/ms_azure_logo.png" alt="Microsoft Azure Logo" />
+      </div>
+    </div>
+    
+    <div id="quick-shake-body">
+      <div id="quick-shake-timeout">
+        <p>Are you still there?</p>
+        <div id="timer"></div>
+        <p>Click anywhere to resume playing.</p>
+      </div>
+      <div id="quick-shake-scale">
+      <div id="top">0.0018</div>
+      <div id="bottom">0 %g</div>
+      </div>
+      <canvas id="quick-shake-canvas"></canvas>
+      <div id="quick-shake-controls">
+        <div class="controls" id="playback">
+          <label>Shake History</label>
+          <div id="playback-slider">
+          </div>
+        </div>
+      <div class="controls" id="state-buttons">
+        <a href="#" class="disabled" id="play-button" title="Play">
+          <img alt="Play" src="assets/play.png"></a>
+        <a href="#" id="stop-button" title="Pause">
+          <img alt="Stop" src="assets/stop.png"></a>
+        <a href="#" class="disabled" id="realtime-button" title="Realtime">
+          <img alt="Realtime" src="assets/realtime.png"></a>
+      </div>
+      <div class="controls" id="scale">
+        <label>Scale (%g) - Top Left</label>
+          <div id="scale-slider">
+          </div>
+        </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    
   </body>
+
 </html>
-
-
-  
