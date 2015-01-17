@@ -24,13 +24,13 @@ canvasConfig =function canvasConfig(){
   this.endtime        = 0;
   this.startPixOffset = this.width;//starttime pixelOffset
   this.lastTimeFrame  = null; // track the time of the last time frame(left side of canvas this will be incremented each interval)
-  this.canvasElement  = document.getElementById("quakeShake");
+  this.canvasElement  = document.getElementById("quick-shake-canvas");
   this.localTime      = true;
   this.stationScalar  =3.207930*Math.pow(10,5)*9.8; // count/scalar => %g
   //log values
-  this.scale          = 2; //strarting scale slide value 
-  this.zoomSliderMin  = 0;
-  this.zoomSliderMax  = 3;
+  this.scale          = 2.75; //initial scale value 
+  this.scaleSliderMin  = 1.5;
+  this.scaleSliderMax  = 3.5;
   //end log values
   this.realtime       = true; //realtime will fast forward if tail of buffer gets too long.
   this.scroll         = null; //sets scrolling
@@ -52,7 +52,7 @@ channels = [
       sta: "HWK2",  
       chan: "HNZ", 
       net: "UW", 
-      loc: "01", 
+      loc: "00", 
       max: null,
       position: 1, //from top 0 is highest
       lineColor: colors.shGreen
@@ -68,7 +68,10 @@ channels = [
     })
 ];
 
+// host = "http://quakeshaketest1.azurewebsites.net:80"
+// host = "http://eew.pnsn.org:80";
 host = "ws://wssub.cloudapp.net:8080";
+iohost = "http://qssub.cloudapp.net:8080";
 
 function Scnl(scnl){
   //this.buf = [];

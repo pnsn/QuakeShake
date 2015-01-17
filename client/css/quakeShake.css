@@ -1,55 +1,157 @@
-#status {
-  height: 20px;
-  /*  width:80px;*/
-  margin-bottom: 50px;
-  color: red;
+#page{
+	margin-top:5px;
 }
 
-#quakeShake {
+#azure-logo {
+  float: right;
+  margin-top: 50px;
+	margin-right:1%;
+}
+#azure-logo img {
+  width: 120px;
+}
+
+body{
+	font:normal 15px/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+#header{
+	height:86px;
+}
+
+.interior {
+  margin-top: 10px;
+}
+
+#quick-shake-logo {
+  float: left;
+	margin-left:1%;
+}
+#quick-shake-logo img {
+  height: 80px;
+}
+
+#quick-shake-timeout {
+  display: none;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  background-color: white;
+  opacity: 0.9;
+  text-align: center;
+  z-index: 10000;
+  color: #565656;
+}
+#quick-shake-timeout p {
+  margin-bottom: 5px;
+}
+#quick-shake-timeout #timeout-timer {
+  color: red;
+  display: inline;
+  margin-right: auto;
+  margin-left: auto;
+  height: 20px;
+  width: 20px;
+}
+
+#quick-shake-canvas {
+	position:fixed;
+  left: 60px;
+  background-image: url("pnsnLogoSmallGrey.png");
+  background-repeat: no-repeat;
+  background-size: 95px 30px;
+}
+
+#quick-shake-controls {
+  position: absolute;
+  overflow: hidden;
+  display: inline-block;
+  left: 0px;
+  width: 80%;
+  padding-left: 10%;
+  padding-right: 10%;
+  bottom: 0px;
+}
+
+#quick-shake-controls #state-buttons {
   display: block;
   margin-left: auto;
   margin-right: auto;
+  width: 165px;
 }
-
-.slidertime, #sliderVa {
-  display: none;
-}
-
-#quick-shake {
-  text-align: center;
-}
-
-#quake-controls {
-  overflow: hidden;
-  display: block;
-  margin-top: 15px;
-  margin-bottom: 20px;
-}
-#quake-controls #zoom, #quake-controls #playback {
+#quick-shake-controls #scale, #quick-shake-controls #playback {
   margin-top: 5px;
-  width: 300px;
+  width: 27%;
+  position: absolute;
 }
-#quake-controls .controls {
-  display: inline-block;
-  float: left;
-  margin-left: 6%;
+#quick-shake-controls #scale {
+  right: 10%;
+  top: 0px;
 }
-#quake-controls .ui-state-default, #quake-controls .ui-widget-content .ui-state-default, #quake-controls .ui-widget-header .ui-state-default {
-  background: #27ae60 !important;
-  border: 1px solid #00102F !important;
+#quick-shake-controls #playback {
+  left: 10%;
+  top: 0px;
 }
-#quake-controls .disabled {
+#quick-shake-controls .ui-state-default, #quick-shake-controls .ui-widget-content .ui-state-default, #quick-shake-controls .ui-widget-header .ui-state-default {
+  background: #27ae60;
+  border: 1px solid #00102F;
+}
+#quick-shake-controls .disabled {
   opacity: 0.4;
 }
-#quake-controls .ui-widget-content {
-  background-image: url("/assets/slider_gradient.png") !important;
+#quick-shake-controls .ui-widget-content {
+  background-image: url("slider_gradient.png");
 }
 
-.slidertime {
-  margin-top: 5px;
-  float: left;
+#quick-shake-scale {
+  position: absolute;
+  left: 0px;
+  width: 55px;
+  border-right: solid #888888 2px;
+}
+#quick-shake-scale #bottom, #quick-shake-scale #top {
+  position: absolute;
+}
+#quick-shake-scale #top {
+  top: 0px;
+  right: 1px;
+}
+#quick-shake-scale #bottom {
+  bottom: 0px;
+  right: 3px;
 }
 
-#sliderRight, #sliderMid {
-  margin-left: 100px;
+@media screen and (max-device-width: 800px){
+	#header, #quick-shake-scale{
+		display:none;
+	}
+	
+	#quick-shake-canvas {
+	  position: absolute;
+	  left: 10px;
+	  top: 30px;
+	}
+
+	#quick-shake-controls {
+	  margin-bottom: 0px;
+	  width: 100%;
+	  overflow: hidden;
+	  height: 60px;
+	  padding: 0px;
+	}
+	#quick-shake-controls #state-buttons {
+	  margin-top: 4px;
+	  margin-left: 10px;
+	  float: left;
+	}
+	#quick-shake-controls #scale {
+	  display: none;
+	}
+	#quick-shake-controls #playback {
+	  position: relative;
+	  float: right;
+	  left: auto;
+	  margin-right: 10px;
+	}
+	
 }

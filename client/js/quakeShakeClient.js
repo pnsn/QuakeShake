@@ -13,7 +13,9 @@ $(function(){
   };
   var mobile;
 	//Used to config some items for mobile view
-	if($(document).width() <= 800){mobile = true;}
+	if($(document).width() <= 800){
+    mobile = true;
+  }
 	
 // Controls stuff
   $("#playback-slider").slider({
@@ -80,8 +82,8 @@ $(function(){
     
     
   }else{
-   host = "http://eew.pnsn.org:80";
-    var socket = io(host);
+   
+    var socket = io(iohost);
     socket.on('connect', function(data){
       console.log("connecting?");
       // setStatus('connected');
@@ -90,9 +92,9 @@ $(function(){
       canvas.fullWidth();
     });
 
-    socket.on('reconnecting', function(data){
-      setStatus('reconnecting');
-    });
+  socket.on('reconnecting', function(data){
+    setStatus('reconnecting');
+  });
 
   socket.on('message', function (message) {
       var data = JSON.parse(message);
@@ -552,32 +554,30 @@ $(function(){
     var height, width, offset, diff;
     // Preserve difference in width and offset to prevent jumping
     diff = this.width-this.startPixOffset;
-    
-    // TODO: get css out of here, if possible
-    $("#header, #footer, #stage-warning, #full-width").hide();
-    $("#page").css("margin-top", "0px");
 
     if (mobile){ 
-			$('.slicknav_menu, #menu').hide();
+
       height = $(window).height()-110; //banner height && controls height
       width = $(window).width()-20;
       $("#playback").css("width",$("#quick-shake-controls").width()-195+"px");
       $("#quick-shake-canvas").css("top",5+"px");
+
     } else {
       offSet=60; //Offset from edge (to fit scale)
-      height = $(window).height()-$("#page").height()-105; //banner height && controls height 
+      height = $(window).height()-($("#header").height() + $('#quick-shake-controls').height() + 60); //banner height && controls height 
       width = $(window).width()-1.2*offSet;
-      $("#quick-shake-scale").css("top", $("#page").height()+22+"px");// 22 for top time stamp
-      $("#quick-shake-canvas").css("top", $("#page").height()+"px");
+
+      $("#quick-shake-scale").css("top", $("#page").height()+30+"px");
     }
-    $("#quick-shake-canvas").css("background-position", (width-100)+"px "+(height-13)+"px");
+    $("#quick-shake-canvas").css("background-position-x", (width-100)+"px");
+    $("#quick-shake-canvas").css("background-position-y", (height-13)+"px");      
     this.channelHeight = height/channels.length;
     this.height = this.channelHeight*channels.length + 44;//44 for top & bottom time stamps
     this.width = width;
-    
+
     this.canvasElement.height=this.height;
     this.canvasElement.width=this.width;
-    
+
     this.timeWindowSec  = this.width/this.pixPerSec;
     this.startPixOffset = this.width-diff;
     this.updateScale();
