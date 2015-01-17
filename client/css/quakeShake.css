@@ -57,7 +57,7 @@ body{
 #quick-shake-canvas {
 	position:fixed;
   left: 60px;
-  background-image: url("pnsnLogoSmallGrey.png");
+  background-image: url("../assets/pnsnLogoSmallGrey.png");
   background-repeat: no-repeat;
   background-size: 95px 30px;
 }
@@ -100,7 +100,7 @@ body{
   opacity: 0.4;
 }
 #quick-shake-controls .ui-widget-content {
-  background-image: url("slider_gradient.png");
+  background-image: url("../assets/slider_gradient.png");
 }
 
 #quick-shake-scale {
