@@ -29,7 +29,7 @@ var SubScnls = require(__dirname + "/../config/" + ARGS['config'] +  "Sub.conf.j
 //so we are making  a few assumptions
 //packets are about 2.25seconds, 200 seconds wanted (little padding)
 //assumes three packets. 
-var buffMax = parseInt(200/2.25, 0)*3;
+var buffMax = 3000;//parseInt(200/2.25, 0)*3;
 var buffer =[];
 
 var subScnls = new SubScnls();
@@ -44,7 +44,7 @@ io.on('connection', function(client){
    }
   
   sub.on('message', function(channel, msg) {
-    // console.log("from channel: " + channel + " msg: " + msg);
+    console.log("from channel: " + channel);// + " msg: " + msg);
     console.log("msg.length: " + msg.length );
     console.log("buffer length :" + buffer.length);
     client.send(msg);

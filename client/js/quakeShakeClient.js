@@ -68,20 +68,20 @@ $(function(){
   
 //websocket stuff
 
-  if(window.WebSocket){
-    var ws = new WebSocket(host);
-    ws.onopen = function(data) {
-      canvas.setTimeout();
-      canvas.fullWidth();
-    };
-
-    ws.onmessage = function(message, flags) {
-      var data= JSON.parse(message.data);
-       canvas.updateBuffer(data);
-    };
+  // if(window.WebSocket){
+  //   var ws = new WebSocket(host);
+  //   ws.onopen = function(data) {
+  //     canvas.setTimeout();
+  //     canvas.fullWidth();
+  //   };
+  // 
+  //   ws.onmessage = function(message, flags) {
+  //     var data= JSON.parse(message.data);
+  //      canvas.updateBuffer(data);
+  //   };
+  //   
     
-    
-  }else{
+  // }else{
    
     var socket = io(iohost);
     socket.on('connect', function(data){
@@ -100,7 +100,7 @@ $(function(){
       var data = JSON.parse(message);
       canvas.updateBuffer(data);
   });
-}
+// }
   
 //end socket stuff
 
@@ -197,8 +197,8 @@ $(function(){
         this.lastTimeFrame += this.timeStep;
       }
       
-      //ADJUST PLAYwe need to adjust play if data on end of buffer tails off canvas
-      //ideally we want new data written on canvas at about 10 seconds in 
+      // ADJUST PLAYwe need to adjust play if data on end of buffer tails off canvas
+      // ideally we want new data written on canvas at about 10 seconds in 
       if(this.realtime){
         var tail = parseInt(this.startPixOffset + ((this.endtime - this.lastTimeFrame)/1000 * this.pixPerSec) - this.width, 0);
         if(tail < -50)
@@ -220,10 +220,10 @@ $(function(){
         this.startPixOffset = Math.max(0,   this.startPixOffset -pad);
       }
     
-      //PRUNE the buffer at 6 canvas widths by three canvas widths
-      if(((this.endtime - this.starttime)/1000)*this.pixPerSec > 6*this.width){
+      //PRUNE the buffer at  canvas widths by three canvas widths
+      if(((this.endtime - this.starttime)/1000)*this.pixPerSec > 10*this.width){
         var time= this.starttime;
-        while(time < this.starttime + 3*this.timeWindowSec*1000){          
+        while(time < this.starttime + 10*this.timeWindowSec*1000){          
           delete this.buffer[time];
           time+=this.timeStep; 
         }

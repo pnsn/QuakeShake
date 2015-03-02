@@ -52,7 +52,7 @@ channels = [
       sta: "HWK2",  
       chan: "HNZ", 
       net: "UW", 
-      loc: "01", 
+      loc: "00", 
       max: null,
       position: 1, //from top 0 is highest
       lineColor: colors.shGreen
@@ -68,9 +68,10 @@ channels = [
     })
 ];
 
-host = "ws://wsub.trafficmanager.net:8080";
-iohost="http://qsub.trafficmanager.net:80";
-
+// host = "ws://wsub.trafficmanager.net:8080";
+// iohost="http://qsub.trafficmanager.net:80";
+host = "ws://localhost:2112";
+iohost = "http://localhost:2112"
 function Scnl(scnl){
   //this.buf = [];
   this.sta = scnl.sta;

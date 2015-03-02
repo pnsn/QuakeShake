@@ -43,18 +43,19 @@ var redisPort = conf.redisPort;
 var redisHost = conf.redisHost;
 
 
-//run this as a realtime daemon or as a discreet chunk 
-//discreet chunks aren't really part of the plan right now
-// if(ARGS['start'] && ARGS['end']){
-//   var daemon =false;
-// }else{
-//   var daemon = true;
-//   var end = Date.now();
-//   var start = end  -1;
-// }
 
-var  daemon = true;
-
+var daemon, start, stop;
+//daemon mode will run indefinetly with current data
+//daemon is assumed if stop is blank
+if(conf.stop ===null){
+  daemon = true;
+  stop = Date.now();
+  start = stop - 1000; //1 second
+}else{
+  daemon = false;
+  start = conf.start;
+  stop =  conf.stop;
+}
 var pub = redis.createClient(redisPort, redisHost);
 
 
@@ -62,16 +63,20 @@ console.log("To subscribe to this channel start quakeShakeSub with:");
 console.log("node server/quakeShakeSub channel=" + redisKey + " port=n redisHost=thishost redisPort=" + redisPort);
 
 //for testing
-var lastEndtime = Date.now();
+// var lastEndtime = Date.now();
 
-function getData(chan){
-  //create connection then attach listeners 
-  // header: fires when getscnlraw header is processed
-  //data: fires when data is buffered
-  //close fires on waverserver closes connection
-
-  var ws = new Waveserver(waveHost, wavePort, chan, Date.now());
-  ws.connect();
+function getData(scnl){
+  console.log('getData called');
+  if(scnl.lastBufStart === null){
+    scnl.lastBufStart = start;
+  }
+  if(daemon){
+    var scnlStop = Date.now();
+  }else{
+    var scnlStop = scnl.lastBufStart + 5*1000; //move 5 seconds at a time for back filling
+  }
+  var ws = new Waveserver(waveHost, wavePort, scnl);
+  ws.connect(scnl.lastBufStart, scnlStop);
   //parse getScnlRaw flag and decide whether to disconnect or continue
   ws.on('header', function(header){
     responseHeader = header;
@@ -84,13 +89,14 @@ function getData(chan){
   
   });
   ws.on('data', function(message){
-    var chan = findChan(message);
-    if(message.starttime > chan.start){
-      chan.start = message.starttime;
+    console.log("dataa!!!!");
+    var scnl = findChan(message);
+    if(message.starttime > scnl.lastBufStart){
+      scnl.lastBufStart = message.starttime;
       pub.publish(redisKey, JSON.stringify(message));
       console.log("from scnl:" + message.sta + ":" + message.chan + ":" + message.net + ":" + message.loc);
-      // console.log(chan.sta + " " + (lastEndtime - message.starttime));
-      lastEndtime = message.endtime;
+      // console.log(scnl.sta + " " + (lastEndtime - message.starttime));
+      // lastEndtime = message.endtime;
       console.log("packet length " + message.data.length);
       console.log("elapsed time = " + (message.endtime - message.starttime));
     }
@@ -108,8 +114,8 @@ function getData(chan){
     setTimeout(function(){
       scnlIndex ++;
       scnlIndex = scnlIndex == scnls.length ? 0 : scnlIndex;
-      var chan = scnls[scnlIndex];
-      getData(chan);
+      var scnl = scnls[scnlIndex];
+      getData(scnl);
     }, 500);
   });
 
